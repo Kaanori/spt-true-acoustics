@@ -6,9 +6,9 @@ Sound that knows what a wall is made of and which way the sound really travels. 
 
 **🎧 Hear the difference yourself:** [True Acoustics Demo](https://claude.ai/artifact/7BXLomAnuBnL6ofqfq41RC) – vanilla vs. True Acoustics side by side, plus a sound sandbox where you build walls, doors and windows (or load a real map) and listen live. Headphones recommended.
 
-> **BETA – version 0.8.8-beta.** This version has been played in real raids, but by **one tester**, mostly on **Factory** (plus a first check on Customs). Several parts were added in the last days and are running but not yet judged by ear (see the labels below). Expect rough edges and values that still need tuning. Feedback is very welcome: please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues) and, if you can, attach the relevant lines of `BepInEx/LogOutput.log` (they start with `[Diagnostics]`, `[Reverb]` or `[Calibration]`).
+> **BETA – version 0.8.9-beta.** This version has been played in real raids, but by **one tester**, mostly on **Factory** (plus a first check on Customs). Several parts were added in the last days and are running but not yet judged by ear (see the labels below). Expect rough edges and values that still need tuning. Feedback is very welcome: please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues) and, if you can, attach the relevant lines of `BepInEx/LogOutput.log` (they start with `[Diagnostics]`, `[Reverb]` or `[Calibration]`).
 
-**Version numbers:** this release is **0.8.8** everywhere (Forge, GitHub, DLL/log). The two hotfixes before it were published as 0.8.6 and 0.8.7 on the Forge and as v0.8.5.1 and v0.8.5.2 on GitHub – same files, different numbers. From now on there is one number.
+**Version numbers:** this release is **0.8.9** everywhere (Forge, GitHub, DLL/log). 0.8.9 adds the separate map data download to 0.8.8; everything else is unchanged. The two hotfixes before 0.8.8 were published as 0.8.6 and 0.8.7 on the Forge and as v0.8.5.1 and v0.8.5.2 on GitHub – same files, different numbers. Since 0.8.8 there is one number.
 
 ## How this mod was made (AI disclosure)
 
@@ -25,7 +25,7 @@ bug, please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues
 
 ## Installation
 
-1. Download `Materialklang-0.8.8-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
+1. Download `Materialklang-0.8.9-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
 2. Extract it **into your SPT game folder** (the folder that contains `EscapeFromTarkov.exe`).
    The ZIP already has the right layout; the mod ends up in `BepInEx/plugins/`.
    On Windows, make sure "Extract All" does not add an extra subfolder.
@@ -46,7 +46,7 @@ How sure we are about each point:
 | **[built]** | Built and checked in the offline tests, running in the tester's game, but not yet verified in a raid. |
 | **[off]** | Experimental, **off by default**. |
 
-### What's in (0.8.8-beta)
+### What's in (0.8.9-beta)
 
 **Loudness and distance**
 - **[heard]** **One loudness curve instead of a flat factor.** Insulation now counts in real decibels (`Loudness factor` 1 = real physics: quiet sounds behind thick concrete are gone). Only very loud sounds are squeezed, like the game mix does it: above a real level of 85 dB(A) at your ear each real dB counts 0.2 dB (`Compression knee (dB(A))`, `Compression above knee`). A rifle shot behind a closed door stays clearly audible, footsteps behind the same door get quiet. The knee was tried at 95 and set back to 85 by ear.
@@ -54,7 +54,7 @@ How sure we are about each point:
 - **[log]** **Distance of the close recording through the loudness curve** (`Near recording: distance through the loudness curve`). Added after the first raids with the close recording: plain 1/r made distant shots far too quiet. On Customs it applied to every shot of other players and bots, up to 400 m; not yet judged by ear on the large maps.
 - **[log]** **Explosions** behind walls and rooms are squeezed as much as the game squeezes explosions over distance (`Explosions: compression from the game distance curve`).
 - **[built]** **Calibrated source levels** (`17. All fixed sources → Calibrate source levels`): the V-Ex taxi, BTR, fires, generators, alarms and dripping water play at their real level relative to footsteps, and fall off with a physical distance law (point source 1/r, long sources like trains and the BTR more slowly near by).
-- **[built]** **Lamp hum at a real level** (`Lamps: real hum level (direct sound + room field)`, `Lamps: hum level at 1 m (dB(A))` = 45): fluorescent lamps were the only continuous source without level calibration and could be heard through rooms.
+- **[log]** **Lamp hum at a real level** (`Lamps: real hum level (direct sound + room field)`, `Lamps: hum level at 1 m (dB(A))` = 45): fluorescent lamps were the only continuous source without level calibration and could be heard through rooms.
 
 **Doors, windows and walls**
 - **[log]** **Doors and windows by their real leaf:** material and measured thickness of each door leaf or pane, per band (250 Hz / 1 kHz / 4 kHz), with the unsealed gap around it (doors at most about 23 dB, windows about 30 dB). Replaces the five fixed door/window values of 0.8.5. Doors are found in local raids (fix of 0.8.5.1).
@@ -66,7 +66,7 @@ How sure we are about each point:
 - **[log]** **From the opening:** sound through doors and windows is heard from the opening it comes out of, not through the wall from the source. When openings lie on different sides, the side of the **first sound front** leads, like your ear locates it (`Room paths: direction from the leading path`, `Room paths: first sound front from all paths`). Impacts, casings, doors, windows and grenades in other rooms follow the same rule (`Room paths: direction for one-shot sounds`).
 - **[log]** **Several ways at once:** when a sound reaches you through openings in clearly different directions, each way plays as its own voice from its opening, with its own share of energy, timbre and travel delay (`Room paths: second path as its own voice`, up to 3 voices per sound). For enemy footsteps/gear, voices and one-shot sounds; not for gunshots.
 - **[log]** **Lamps** carry their hum on an invisible carrier, so it can be moved to the opening (`Room paths: carrier for fixed sources with visible parts`).
-- **Precomputed obstacle paths – code only, no map data in this release** (`19. Path search (experimental) → Precomputed obstacle paths`): inside buildings, when a pillar, machine or container blocks the line and the game finds no way around, level and direction can come from a table calculated in advance for the map. The tables used in testing are bound to one installation and are **not** part of this release; without them the mod uses the ISO 9613-2 screening limit (see [Installation](#installation)).
+- **Precomputed obstacle paths – new in 0.8.9: map data as a separate, optional download** (`19. Path search (experimental) → Precomputed obstacle paths`): inside buildings, when a pillar, machine or container blocks the line and the game finds no way around, level and direction come from a table calculated in advance for the map (11 maps, indoor areas only). **[log] on Factory** on the tester's PC with the previous table format; **[log]** with the map data of this release (format 8) on Factory on the tester's PC (table loaded, 335 game files checked in 0.4 s). Loading on another PC is **[built]**: checked under Linux and with Windows paths under Wine, not on a real second Windows PC and not against a second installation – please report which line your BepInEx log shows (see [Installation](#installation)).
 
 **Timbre and filters**
 - **[log]** **Low-pass fitted to the game's real filter** (`14. Sound Paths → Low-pass fit for the 24 dB/oct game filter`, on): measured on 17.11.: the game's low-pass falls 24 dB per octave, not 12. Shots through doors keep their highs instead of losing a whole band above the mids.
@@ -98,9 +98,9 @@ How sure we are about each point:
 - **Distant shots fade out at the game's range limit** (indoors about 160–200 m, suppressed shots outdoors about 240–300 m). That fade is now the biggest level loss for far shots.
 - **Shots from a neighbouring hall can sound almost unmuffled.** Big halls connected by large openings let a lot through, and loud sounds are squeezed by the loudness curve. The "only what arrives with the event" limit does not apply to gunshots and impacts yet (their clip length is not known to the mod).
 - **Keycard reader beeps** are not covered by the silent start of door sounds; their first audio block can still slip out at full volume.
-- **Lamp hum level is an estimate.** It assumes that the game plays lamps much louder than a real lamp; this has not been measured yet. Lamps behind open doors can still be heard. Adjust `Lamps: hum level at 1 m (dB(A))` if lamps are too loud or too quiet.
+- **Lamp hum level still needs tuning.** First measurement (Factory): by the mod's own level reference the game plays lamps at about 35 dB(A) in 1 m – not louder than a real lamp – but with an almost flat distance curve (−6 dB at 10 m instead of −20 dB). With the default of 45 dB(A) the mod therefore changes little, and lamps behind open doors can still be heard. Lower `Lamps: hum level at 1 m (dB(A))` (for example to 35) if lamps are too loud.
 - **Obstacle in the same room:** a pillar or machine between you and a source in the same hall lowers the direct sound, but the hall's own reverberant field is not added back to the dry sound yet, so it can muffle more than in reality.
-- **No precomputed path data in this release.** Obstacles inside buildings that the game finds no way around use the ISO 9613-2 screening limit (at most 20 dB for one edge, 25 dB for several) and are heard from the source, not from the edge. In corridors with a clear view, the walls of the corridor do not add level yet.
+- **Map data (precomputed obstacle paths):** indoor areas only – outdoors, and without the download, the ISO 9613-2 screening limit applies (at most 20 dB for one edge, 25 dB for several) and the sound is heard from the source, not from the edge. Five maps (Reserve, Ground Zero, Streets, Interchange, Labs) still use an older edge model, which makes paths around edges slightly louder; on Interchange long distances often have no value yet. Map variants from other mods (e.g. backported maps) are not covered. After a game update the data no longer matches and is not loaded (the mod keeps working). In corridors with a clear view, the walls of the corridor do not add level yet.
 - **Some metal is too heavy:** hollow barrels and some large metal plates (cranes, wall panels) count as solid steel and insulate up to about 45 dB.
 - **Performance.** On a busy Customs raid the filter part of the mod took about 3 % of the game's main thread, with single frames up to 16 ms. In the first raid on a map, the rooms are measured in the background (1 ms per frame; about 16 s on Factory, about 70 s on Reserve), afterwards it is cached. Setting up the reverb zones at raid start can take up to about 1 s on big maps. If you see frame drops, lower `10. Advanced (rays) → Transmission rays x` / `Reflection rays x` (4 in this release, 1 = game value; from the next raid) or switch off `5. Walls Between Rooms`, `9. Reverb by Material` or the extra voices (`Room paths: second path as its own voice`) first.
 - **If you switch the close recording off:** the distance curve of `13. Distance (SEB)` (`Enabled`, on in this release) then applies to other people's shots again, and with its `Far clip compensation (dB)` a shot at 100 m can be louder than one at 50 m. With the close recording on (default) this curve is not used for other people's shots; section 13 then only extends the outdoor range of unsuppressed shots to 900 m and keeps the flatter explosion curve.
@@ -115,8 +115,8 @@ How sure we are about each point:
 - Handle the fade at the game's range limit for distant shots.
 - Silent start for keycard reader beeps.
 - Clip lengths for gunshots and impacts, so the room part of a shot from another hall is limited like for footsteps.
-- Measure whether the game really plays lamps too loud, and adjust the lamp level.
-- Precomputed path tables that can be shipped (today they are bound to one installation), so obstacles inside buildings get their real way around; level gain in corridors (after a measurement).
+- Tune the lamp level by ear (first measurement: the game's 1 m level is realistic, its distance curve is too flat).
+- Rebuild the map data of Reserve, Ground Zero, Streets, Interchange and Labs with the corrected edge model; level gain in corridors (after a measurement).
 - Better timing for the extra voices (today about 21 ms start uncertainty hides many second paths), and extra voices for looping sounds.
 - Lower the frame-time peaks of the filter part.
 - Later, no date yet: better outdoor propagation around buildings, a check together with Guns Are Loud.
@@ -136,13 +136,13 @@ bug, please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues
 
 ## Installation
 
-1. Download `Materialklang-0.8.8-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
+1. Download `Materialklang-0.8.9-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
 2. Extract it **into your SPT game folder** (the folder that contains `EscapeFromTarkov.exe`).
    The ZIP already has the right layout; the mod ends up in `BepInEx/plugins/`.
    On Windows, make sure "Extract All" does not add an extra subfolder.
 3. Restart the game.
 
-**Defaults are the author's tested settings.** The defaults of 0.8.8 are the settings the tester played with. **If you update from 0.8.7 or older, BepInEx keeps your saved values** – to get the tested state, either delete `BepInEx/config/kaan.materialklang.cfg` once (all your own changes are lost) or set these by hand in F12:
+**Defaults are the author's tested settings.** The defaults (since 0.8.8) are the settings the tester played with. **If you update from 0.8.7 or older, BepInEx keeps your saved values** – to get the tested state, either delete `BepInEx/config/kaan.materialklang.cfg` once (all your own changes are lost) or set these by hand in F12:
 
 - `0. Physics Mode (real values)`: `Loudness factor` 1 (was 0.2 – an old 0.2 squeezes on top of the new loudness curve); `No bass cut on the path (high-pass)` on; `Quiet sources: real audibility` off; `Room paths: diffuse part as real reverb` off
 - `7. Weapon Directivity`: `Occluded shots: no extra occluded mix (physics)` on
@@ -154,13 +154,19 @@ bug, please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues
 
 `3. Bot Hearing (SAIN) → Mode` stays **Off** by default.
 
-**Map data (precomputed obstacle paths):** the code for precomputed obstacle paths is in the mod, but the precomputed map data is **not part of this release** – the tables built during testing only work on the installation they were built on. Without them the mod runs normally: obstacles inside buildings that the game finds no way around use the ISO 9613-2 screening limit. The BepInEx log says so in one info line per raid.
+**Map data (optional, second download):** `TrueAcoustics-MapData-EFT-0.16.9.40743-all-maps.zip` (about 194 MB, about 480 MB unpacked) from the same release.
 
-The mod also writes small files of its own to `BepInEx/cache/TrueAcoustics/` (room absorption measured per map, the footstep reference for the level calibration). They are created on your PC and can be deleted at any time.
+1. Extract it **into your SPT game folder**, like the mod. The files end up in `BepInEx/cache/TrueAcoustics/` (one `.wegtabelle` file per map). Older files with the same map name from earlier versions can be deleted.
+2. It only fits **SPT 4.1.6 / Escape from Tarkov 0.16.9.40743**. At raid start the mod checks name, size and a content digest of the game files each table was made from (the first raid on a map reads the files once, later raids use a small digest cache). If they differ, the table is not used.
+3. Check the BepInEx log at raid start: `Precomputed obstacle paths: map … loaded …` means it works; `… no precomputed obstacle paths for this map (<reason>) …` means it was not used and why. **Please tell us which line you see** – loading on other PCs has not been confirmed yet.
+
+Without the map data the mod runs exactly as without this feature: obstacles inside buildings that the game finds no way around use the ISO 9613-2 screening limit, and the log shows one info line per raid (`… they come with the separate map data download …`). The data contains derived numbers only (room names, probe points, levels and path lengths, the list of game file names with sizes and digests) – no meshes, textures or sounds.
+
+The mod also writes small files of its own to `BepInEx/cache/TrueAcoustics/` (room absorption measured per map, the footstep reference for the level calibration, the digest cache for the map data). They are created on your PC and can be deleted at any time.
 
 ## Uninstall
 
-Delete `BepInEx/plugins/Materialklang/` (settings: `BepInEx/config/kaan.materialklang.cfg`, caches: `BepInEx/cache/TrueAcoustics/`) and restart the game.
+Delete `BepInEx/plugins/Materialklang/` (settings: `BepInEx/config/kaan.materialklang.cfg`, map data and caches: `BepInEx/cache/TrueAcoustics/`) and restart the game.
 
 ## What it does, in plain words
 
@@ -180,7 +186,7 @@ It is an add-on for **Sound Engine Backport (SEB)** and is meant to be played to
 | **Doors and windows** | Each closed door leaf and window pane insulates by its own material and measured thickness, with the gap around it; partly open doors and broken windows let the open part through; big gate wings count. |
 | **Walls between rooms** | Vanilla only lets sound travel between rooms through doors and windows. True Acoustics also measures the straight line through the walls (several walls in a row, wall by wall) and adds both ways as energy. |
 | **Room paths and direction** | Sound through openings is calculated from the real path (edge diffraction at the openings, the rooms in between) and heard from the opening it comes out of; several ways at once can play as separate voices. |
-| **Precomputed obstacle paths** | Inside buildings: ways around pillars and machines that the game does not find can come from a table prepared per map (code only – no map data in this release). |
+| **Precomputed obstacle paths** | Inside buildings: ways around pillars and machines that the game does not find can come from a table prepared per map (optional map data download). |
 | **Timbre** | Materials filter highs and lows differently. In Physics Mode the band calculation does this; the filter is fitted to the game's real 24 dB/octave low-pass, and the game's bass cut is removed. |
 | **Weapon directivity** | Other people's gunshots are quieter and duller when the muzzle points away from you (less so indoors). Needs SEB. |
 | **Distance of gunshots** (SEB) | Close recording at every distance, distance through physics and the loudness curve; plus a longer outdoor range (section 13). |
@@ -211,7 +217,7 @@ Every part has its own switch in the F12 menu. Switch off `1. General → Enable
 
 ## Settings overview (F12)
 
-Sections and the most important settings with their defaults in 0.8.8-beta (the tester's settings). All values have tooltips in the menu, and almost all apply **live**.
+Sections and the most important settings with their defaults in 0.8.9-beta (the tester's settings). All values have tooltips in the menu, and almost all apply **live**.
 
 | Section | Key settings (default) |
 |---|---|
@@ -234,7 +240,7 @@ Sections and the most important settings with their defaults in 0.8.8-beta (the 
 | **16. Loud signals** | `Enabled` (on); `Range (m)` (300); `Range factor` (15); `Name keywords` |
 | **17. All fixed sources** | `Enabled` (on); ranges for small/medium sources and vehicles; `Calibrate source levels` (on); `Lamps: real hum level (direct sound + room field)` (on); `Lamps: hum level at 1 m (dB(A))` (45); `Wall damping for non-occluded sources` (on) with its budget, detour and `Wall damping: air absorption (ISO 9613-1)` (on), `Wall damping: ground under the path is no wall` (on), `Wall damping: real audibility` (on) |
 | **18. Scripted sources** | Trains, airdrop, BTR turret/horn, flares, mortar whistle, doors – all on, ranges as in 0.8.5 |
-| **19. Path search (experimental)** | `Precomputed obstacle paths` (on – needs map data that is not part of this release); `Precomputed paths: line-of-sight check` (on); `Precomputed paths: max. rise / max. fall (dB/s)` (60 / 15); `Path search (experimental)` (**off** – needs a path network file per map that is not shipped) |
+| **19. Path search (experimental)** | `Precomputed obstacle paths` (on – needs the optional map data download); `Precomputed paths: line-of-sight check` (on); `Precomputed paths: max. rise / max. fall (dB/s)` (60 / 15); `Path search (experimental)` (**off** – needs a path network file per map that is not shipped) |
 | **20. Test source (measurement)** | Keys to place and play a test sound (unbound); `Signal` (Click / PinkNoise / GameClip / Gunshot); `Repeat`; `Reference tick` |
 | **21. Gunshot spatialization (experimental)** | `Gunshots: HRTF (experimental)` (**off**) |
 | **22. Meta occlusion (experimental)** | `Override Meta occlusion intensity` (**off**) – for measurements only |
@@ -384,7 +390,7 @@ ISO 9613-2:1996, annex A [15]: for a path through foliage of length `d_f` the at
 
 ### 12. Precomputed obstacle paths
 
-**The code is in the mod, the map data is not part of this release** (the tables built during testing are bound to the installation they were built on). How it works when a table is present: inside buildings, when source and listener are in the same room and an obstacle blocks the line without the game finding a way around, the level per band and the direction come from a table built in advance for each map (probe points about every 3 m; per pair of probes the two best ways around the edges, UTD diffraction; looking up a value takes about 1 µs). Before a value is used, the mod checks which probes it can really see from the source and from you (a few line checks per frame). The value is never louder than a clear line and never quieter than the screening limit of ISO 9613-2 (at most 20 dB for one edge, 25 dB for several) [15]. Without a table – the normal case in this release – the mod uses that screening limit directly. The idea of precomputing paths between probe points follows published game-audio systems (e.g. Valve's Steam Audio).
+**The map data is a separate, optional download** (since 0.8.9). How it works when a table is present: inside buildings, when source and listener are in the same room and an obstacle blocks the line without the game finding a way around, the level per band and the direction come from a table built in advance for each map (probe points about every 3 m; per pair of probes the two best ways around the edges, UTD diffraction; looking up a value takes about 1 µs). Before a value is used, the mod checks which probes it can really see from the source and from you (a few line checks per frame). The value is never louder than a clear line and never quieter than the screening limit of ISO 9613-2 (at most 20 dB for one edge, 25 dB for several) [15]. Without a table (no download, outdoors, or a place without a value) the mod uses that screening limit directly. Tables are checked against the game files by name, size and a content digest; a table made for other game files, or in an older table format, is rejected with the reason in the log. The idea of precomputing paths between probe points follows published game-audio systems (e.g. Valve's Steam Audio).
 
 ### References
 

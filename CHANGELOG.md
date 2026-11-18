@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.9-beta
+
+The map data for the precomputed obstacle paths can now be shipped – as a separate, optional download. Everything else is unchanged from 0.8.8. The version is 0.8.9 everywhere (Forge, GitHub, DLL/log).
+
+Labels as in 0.8.8: **[heard]** judged by ear in raids · **[log]** running in raids, logs show it works · **[built]** built and offline-tested, not yet verified in a raid.
+
+### Added
+
+- **Map data download** `TrueAcoustics-MapData-EFT-0.16.9.40743-all-maps.zip` (about 194 MB, about 480 MB unpacked) in the same GitHub release. Extract it into the SPT folder; the files end up in `BepInEx/cache/TrueAcoustics/`. 11 maps, indoor areas only. Optional: without it the mod runs as 0.8.8 (screening limit for obstacles without a way around).
+
+### Changed
+
+- **New check of the map data against the game files:** name, size and a content digest of each game file the table was made from, instead of the file time – so the data loads on every PC with the same game files (SPT 4.1.6 / EFT 0.16.9.40743). The first raid on a map reads the files once; a digest cache (`BepInEx/cache/TrueAcoustics/game-file-digests.tsv`) makes later raids fast. Changed game files are still rejected.
+- **Table format 8.** Tables of older formats are rejected with the reason in the log.
+- The log line without map data is an info line: `… no precomputed obstacle paths for this map (<reason>) - they come with the separate map data download; the screening limit applies instead.`
+
+### Status
+
+- **[built]** Loading on another PC: checked under Linux and with Windows paths under Wine, not on a real second Windows PC and not against a second installation. Please report which line your BepInEx log shows at raid start: `Precomputed obstacle paths: map … loaded …` or `… no precomputed obstacle paths …`.
+- **[log]** on Factory on the tester's PC with the previous table format (same values); **[log]** with the format 8 data of this release on Factory (table loaded, 335 game files checked in 0.4 s).
+
+### Known issues
+
+- Reserve, Ground Zero, Streets, Interchange and Labs still use the older edge model (paths around edges slightly louder); on Interchange long distances often have no value yet.
+- Indoor areas only; outdoors the screening limit applies.
+- Map variants from other mods (e.g. backported maps) are not covered.
+- After a game update the data no longer matches and is not loaded; the mod keeps working.
+
 ## 0.8.8-beta
 
 **Version numbers:** this release is **0.8.8** everywhere (Forge, GitHub, DLL/log). The two hotfixes before it were published as 0.8.6 and 0.8.7 on the Forge and as v0.8.5.1 and v0.8.5.2 on GitHub – same files, different numbers. From now on there is one number.
@@ -88,7 +116,7 @@ Labels: **[heard]** played in raids and judged by ear by the tester · **[log]**
 - With the close recording switched off, section 13's far-shot curve applies again and can make a shot at 100 m louder than one at 50 m.
 - Not tested with Guns Are Loud.
 
-### Earlier work on this version in detail (9–10 November)
+### Earlier work on 0.8.8 in detail (9–10 November)
 
 - **Fix at the cause: sources with a long flat game curve sounded "right next to you" across their whole surroundings (distance curve, sections 15–18).** Kaan, Streets 10.11.2026 00:24:44: the V-Ex taxi "very loud" 3.7 m away; review `GUTACHTEN-KALIBRIERUNG.md`. Not yet heard in a raid.
   - *Cause (`UmgebungKern.Bezugsradius`):* the new curve kept the game curve up to r0 = "the first distance where the game curve falls faster than 1/r" and used 1/r only beyond. For a linear curve min → max that is always max/2, wherever the curve starts to fall: V-Ex taxi linear 2 → 20 m → r0 10 m, Streets generator linear 1 → 12 m → r0 6 m, BTR 42.7 m, ambient emitters 1–8 m. Up to r0 the (almost flat) game fade-out stayed, so the taxi played −0.9 dB at 3.7 m and −5.1 dB at 10 m instead of −5.3 / −14 dB relative to 2 m. Every source rebuilt by sections 15–18 used the same rule (ambient emitters, raw scene sources, occluded signals, V-Ex/BTR/parked vehicles, scripted sources).

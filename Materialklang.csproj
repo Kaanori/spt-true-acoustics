@@ -11,7 +11,7 @@
     <TargetFramework>net471</TargetFramework>
     <AssemblyName>Materialklang</AssemblyName>
     <RootNamespace>Materialklang</RootNamespace>
-    <Version>0.8.8-beta</Version>
+    <Version>0.8.9-beta</Version>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>

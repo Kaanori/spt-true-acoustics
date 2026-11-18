@@ -18,8 +18,10 @@ namespace Materialklang
     //  Schranken wie umwegsuche (WegeKern.Auswerten): nie lauter als freie Sicht (0 dB), nie leiser als die Schirmgrenze (ISO 9613-2) -
     //  die untere bleibt, weil sie die Physik des Hindernisses (hoechstens 20/25 dB Beugungsverlust) beschreibt und nicht die Suche.
     //  Glaettung: Tabellenwert folgt mit begrenzter Rate (TabGleitKern, Regler lauter/leiser), danach gleitet S wie bisher (SucheSetzen/SBl).
-    //  Datei: BepInEx/cache/TrueAcoustics/<karte>-<pruefsumme des Wegenetzes>.wegtabelle; Pruefsumme ueber dieselben Spieldateien wie das
-    //  Wegenetz (Spiel-Update -> passt nicht -> nicht geladen, eine Warnzeile).
+    //  Datei: BepInEx/cache/TrueAcoustics/<karte>-<summe>.wegtabelle (Format 8; tabellenverteilen 18.11.): der Kopf nennt die Spieldateien, aus
+    //  denen die Karte gebaut wurde, mit Groesse und Inhalts-Abdruck (SpielAbdruck in Schallweg/SwTabelle.cs) - gleich auf jedem Rechner mit
+    //  denselben Spieldateien, daher als eigener Download verteilbar. Anderes Spiel-Update -> passt nicht -> nicht geladen, eine Infozeile.
+    //  Die Abdruecke merkt sich game-file-digests.tsv im selben Ordner (nur Rechenersparnis, siehe SpielAbdruck.Merker).
     // ------------------------------------------------------------------------------------------
     internal static class WegTabelleSpiel
     {
@@ -41,7 +43,7 @@ namespace Materialklang
             An = c.Bind(sek, "Precomputed obstacle paths", true,
                 "If source and listener are in the same room and the game finds no way around the obstacles between them (sound log: 'no detour found'), " +
                 "the paths around the edges come from a table that was calculated in advance for the map (file <map>-<checksum>.wegtabelle in " +
-                "BepInEx/cache/TrueAcoustics). Works without 'Path search (experimental)' and without its 700 MB network (about 13 MB on Factory, no " +
+                "BepInEx/cache/TrueAcoustics, part of the separate map data download; it is only used if it was made for the same game files). Works without 'Path search (experimental)' and without its 700 MB network (about 13 MB on Factory, no " +
                 "background thread). Never quieter than the screening limit, never louder than line of sight. No table or no value for a place = as before. " +
                 "Applies live (the table is loaded at the next raid start).");
             Rauf = c.Bind(sek, "Precomputed paths: max. rise (dB/s)", 60f,
@@ -86,18 +88,22 @@ namespace Materialklang
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 string grund = "no file " + karte + "-*.wegtabelle";
+                // Abdruecke der Spieldateien: einmal je Rechner und Datei lesen, danach aus dem Merker (Groesse + Zeit dieses Rechners unveraendert)
+                var merker = Directory.Exists(dir) ? new SpielAbdruck.Merker(Path.Combine(dir, "game-file-digests.tsv")) : null;
                 if (Directory.Exists(dir))
                     foreach (var f in Directory.GetFiles(dir, karte + "-*.wegtabelle"))
                     {
                         var k = WegTabelle.Kopf(f, out string g0);
                         if (k == null) { grund = Path.GetFileName(f) + ": " + g0; continue; }
-                        if (!k.Passt(daten, out string g)) { grund = Path.GetFileName(f) + ": " + g + " (made for other game files)"; continue; }
+                        if (!k.Passt(daten, out string g, merker)) { grund = Path.GetFileName(f) + ": " + g + " (made for other game files)"; continue; }
+                        double pruefS = sw.Elapsed.TotalSeconds;
                         var t = WegTabelle.Lesen(f);
                         ladeS = sw.Elapsed.TotalSeconds; datei = Path.GetFileName(f);
-                        ladeText = $"map {karte}: {datei} loaded in {ladeS:F2} s - {t.RN} rooms, {t.SOff[t.RN]} probes, {t.ZKey.Length} cells, about {t.Bytes / 1000000} MB (built {t.Erstellt}).";
+                        ladeText = $"map {karte}: {datei} loaded in {ladeS:F2} s - {t.RN} rooms, {t.SOff[t.RN]} probes, {t.ZKey.Length} cells, about {t.Bytes / 1000000} MB (built {t.Erstellt}); " +
+                                   $"{t.Abdruck.Count} game files checked in {pruefS:F2} s ({merker.Gerechnet} read, {merker.Gelesen / 1000000} MB, {merker.Treffer} from the digest cache).";
                         return t;
                     }
-                ladeText = $"map {karte}: no precomputed obstacle paths for this map ({grund}) - optional data, not part of the public release; the screening limit applies instead.";
+                ladeText = $"map {karte}: no precomputed obstacle paths for this map ({grund}) - they come with the separate map data download; the screening limit applies instead.";
                 return (WegTabelle)null;
             });
         }
