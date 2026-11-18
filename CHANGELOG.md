@@ -2,19 +2,19 @@
 
 ## 0.8.9-beta
 
-The map data for the precomputed obstacle paths can now be shipped – as a separate, optional download. Everything else is unchanged from 0.8.8. The version is 0.8.9 everywhere (Forge, GitHub, DLL/log).
+The map data for the precomputed obstacle paths can now be shipped and is included in the download: one file, `Materialklang-0.8.9-beta-with-map-data.zip` (189 MB – almost all of it map data; the mod itself is under 1 MB). Everything else is unchanged from 0.8.8. The version is 0.8.9 everywhere (Forge, GitHub, DLL/log).
 
 Labels as in 0.8.8: **[heard]** judged by ear in raids · **[log]** running in raids, logs show it works · **[built]** built and offline-tested, not yet verified in a raid.
 
 ### Added
 
-- **Map data download** `TrueAcoustics-MapData-EFT-0.16.9.40743-all-maps.zip` (about 194 MB, about 480 MB unpacked) in the same GitHub release. Extract it into the SPT folder; the files end up in `BepInEx/cache/TrueAcoustics/`. 11 maps, indoor areas only. Optional: without it the mod runs as 0.8.8 (screening limit for obstacles without a way around).
+- **Map data included in the download** (about 480 MB unpacked): extract the ZIP into the SPT folder; the map data ends up in `BepInEx/cache/TrueAcoustics/`. 11 maps, indoor areas only. If it does not fit your game files (or you delete that folder), it is not loaded and the mod runs as 0.8.8 (screening limit for obstacles without a way around).
 
 ### Changed
 
 - **New check of the map data against the game files:** name, size and a content digest of each game file the table was made from, instead of the file time – so the data loads on every PC with the same game files (SPT 4.1.6 / EFT 0.16.9.40743). The first raid on a map reads the files once; a digest cache (`BepInEx/cache/TrueAcoustics/game-file-digests.tsv`) makes later raids fast. Changed game files are still rejected.
 - **Table format 8.** Tables of older formats are rejected with the reason in the log.
-- The log line without map data is an info line: `… no precomputed obstacle paths for this map (<reason>) - they come with the separate map data download; the screening limit applies instead.`
+- The log line without map data is an info line: `… no precomputed obstacle paths for this map (<reason>) - they come with the separate map data download; the screening limit applies instead.` (the wording is older – the map data is included in the download now).
 
 ### Status
 
