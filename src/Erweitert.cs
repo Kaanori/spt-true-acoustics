@@ -15,13 +15,13 @@ namespace Materialklang
         internal static void Binden(ConfigFile c)
         {
             const string s = "10. Advanced (rays)";
-            TransmissionStrahlen = c.Bind(s, "Transmission rays x", 1f,
+            TransmissionStrahlen = c.Bind(s, "Transmission rays x", 4f,
                 new ConfigDescription("Factor on the starting rays for walls/obstacles (game: 12 at high quality). More = less jumping, finds narrow gaps, costs a little more CPU. Takes effect from the next raid.",
                     new AcceptableValueRange<float>(0.5f, 4f)));
-            ReflexionStrahlen = c.Bind(s, "Reflection rays x", 1f,
+            ReflexionStrahlen = c.Bind(s, "Reflection rays x", 4f,
                 new ConfigDescription("Factor on the starting rays for detours via walls (game: 24). Takes effect from the next raid.",
                     new AcceptableValueRange<float>(0.5f, 4f)));
-            Abpraller = c.Bind(s, "Max. bounces", 0,
+            Abpraller = c.Bind(s, "Max. bounces", 6,
                 new ConfigDescription("0 = game value (3). More helps little: after 6 bounces ~12 % energy is left. Takes effect from the next raid.",
                     new AcceptableValueRange<int>(0, 8)));
             VerlustJeAbprall = c.Bind(s, "Energy kept per bounce", 0f,

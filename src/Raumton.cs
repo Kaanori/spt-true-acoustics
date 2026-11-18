@@ -41,7 +41,7 @@ namespace Materialklang
 
         internal static void Binden(ConfigFile c)
         {
-            Prozent = c.Bind(Umgebung.Sek, "Indoor room tone volume (%)", 100f,
+            Prozent = c.Bind(Umgebung.Sek, "Indoor room tone volume (%)", 30f,
                 new ConfigDescription("Volume of the constant background hum inside buildings (the game's room tone of the room you are in). " +
                     "100 = as in the game, 50 = half as loud (-6 dB), 0 = off. Outdoor ambience, rain, wind and SEB's ambient volume stay unchanged. " +
                     "Works without Physics Mode. Above 100 % it can only rise until the sound reaches full volume. Applies live.",

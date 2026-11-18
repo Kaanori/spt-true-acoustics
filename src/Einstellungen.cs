@@ -23,6 +23,7 @@ namespace Materialklang
                     new AcceptableValueRange<float>(-1f, 1f)));
             Plugin.Diagnose = c.Bind("1. General", "Diagnostic log", true,
                 "Writes a summary to the BepInEx log every 30 s (material hits, vanilla vs. new values).");
+            CullingFix.Binden(c);   // 0.8.6: Spielfehler AudioSourceCulling
             Stetigkeit.Binden(c);
 
             foreach (var (g, name, k, s) in Plugin.Startwerte)
@@ -51,7 +52,9 @@ namespace Materialklang
             LautSignal.Binden(c);   // 0.8.5, Abschnitt 16 (nach Physik)
             FesteQuellen.Binden(c); // 0.8.5, Abschnitt 17 (nach 15/16)
             SkriptQuellen.Binden(c); // 0.8.5, Abschnitt 18 (nach 17: Ausgangsfackeln laufen ueber den Weg "raw scene" von 17)
+            Kalibrierung.Binden(c);   // 0.8.6, Abschnitt 17: Calibrate source levels
             WandDaempfung.Binden(c); // 0.8.5, Abschnitt 17: Wall damping for non-occluded sources (Quellen aus 15/17/18)
+            Wegsuche.Binden(c);      // 0.8.6, Abschnitt 19: Path search (experimental)
 
             // Einmalig: Werte aus den alten deutschen Namen uebernehmen.
             Migriert = Einstellungsumzug.Uebernehmen(c, vorher);

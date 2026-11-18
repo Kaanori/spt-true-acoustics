@@ -26,7 +26,7 @@ namespace Materialklang
     //     120 m, 1/r-Kurve bis 0 bei 120 m). Nicht hier: die 29 Laden-Radios im Alarm (ClientBroadcastPlayer, 15-70 m, stellen
     //     Kurve/Reichweite selbst), Labs-Durchsagen (InteractiveSubscriber/QueuePlayer, Stereo).
     //  Umsetzung: Postfix auf SourceOccluder.CreateSourceWrappers; fuer Quellen, deren Name (Quelle, Eltern, Grosseltern, Clip)
-    //  ein Stichwort trifft: neue Kurve (UmgebungKern.Bauen), BetterSource.SetRolloff(neu) und Reichweite des Containers.
+    //  ein Stichwort trifft: neue Kurve (UmgebungKern.Bauen, 0.8.6 mit Bezugsabstand), BetterSource.SetRolloff(neu) und Reichweite des Containers.
     //  Okklusion/Raumwege/Luftdaempfung/Hoerbarkeit von True Acoustics wirken weiter (die Quelle bleibt im Occluder).
     // ---------------------------------------------------------------------------------------------
     internal static class LautSignal
@@ -101,7 +101,9 @@ namespace Materialklang
                     Plugin.Log.LogWarning("Loud signals: target not found (game update?) -> section 16 off.");
                     return;
                 }
-                h.Patch(ziel, postfix: new HarmonyMethod(typeof(LautSignal), nameof(NachWrappers)));
+                // Gesamtreview B3: Prefix gibt schon umgestellte Rohquellen (Abschnitt 17) VOR dem Bau der Wrapper zurueck - sonst
+                // uebernimmt der Wrapper (MaxDistance, Rolloff) die verlaengerte Reichweite als "Original" und sie wuerde doppelt verlaengert.
+                h.Patch(ziel, prefix: new HarmonyMethod(typeof(LautSignal), nameof(VorWrappers)), postfix: new HarmonyMethod(typeof(LautSignal), nameof(NachWrappers)));
             }
             catch (Exception e) { Statistik.Fehler(e); Plugin.Log.LogError($"Loud signals: applying failed: {e.Message}"); }
         }
@@ -115,6 +117,17 @@ namespace Materialklang
         }
 
         // ---- Haken ----
+        static void VorWrappers(SourceOccluder __instance)
+        {
+            try
+            {
+                var src = __instance._sources;
+                if (src == null) return;
+                for (int i = 0; i < src.Length; i++) if (src[i] != null) FesteQuellen.Abgeben(src[i]);
+            }
+            catch (Exception ex) { Statistik.Fehler(ex); }
+        }
+
         static void NachWrappers(SourceOccluder __instance)
         {
             if (gestoert) return;
@@ -220,18 +233,19 @@ namespace Materialklang
                 FesteQuellen.Melden(e.S.GetInstanceID(), m);
                 return;
             }
-            var kk = UmgebungKern.Bauen(altF, e.MaxAlt, maxNeu, k == QuellKlasse.Laut ? TrimDb.Value : FesteQuellen.TrimDb.Value, out double r0);
+            var pegelArt = k == QuellKlasse.Laut ? PegelArt.Alarm : QuellPegelKern.AusKlasse(k, e.Namen);   // 0.8.6 Abstandsgesetz der Quellart
+            var kk = FesteQuellen.KurveBauen(altF, e.MaxAlt, maxNeu, k == QuellKlasse.Laut ? TrimDb.Value : FesteQuellen.TrimDb.Value, pegelArt, e.S, out var bez);
             var keys = new Keyframe[kk.Length];
             for (int i = 0; i < kk.Length; i++) keys[i] = new Keyframe(kk[i].T, kk[i].V, kk[i].In, kk[i].Out);
             e.Neu = new AnimationCurve(keys);
-            e.MaxNeu = (float)maxNeu; e.R0 = (float)r0; e.Klasse = k;
+            e.MaxNeu = (float)maxNeu; e.R0 = (float)bez.Ref; e.Klasse = k;
             e.S.rolloffMode = AudioRolloffMode.Custom;
             e.S.SetCustomCurve(AudioSourceCurveType.CustomRolloff, e.Neu);
             e.W.SetRolloff(e.MaxNeu);   // BetterSource.MaxDistance + AudioSource.maxDistance (x OcclusionRolloffScale); das Culling liest nach
             ContainerReichweite(e);
             FesteQuellen.TaktMerken(e.ContId, e.W, e.Pos, e.MaxAlt);
             e.Umgestellt = true;
-            m.An = true; m.Klasse = k; m.MaxNeu = e.MaxNeu; m.R0 = e.R0; m.AltF = altF; m.Neu = e.Neu;
+            m.An = true; m.Klasse = k; m.MaxNeu = e.MaxNeu; m.R0 = e.R0; m.AltF = altF; m.Neu = e.Neu; m.Bez = bez; m.Pegel = pegelArt;
             FesteQuellen.Melden(e.S.GetInstanceID(), m);
         }
 
@@ -281,7 +295,7 @@ namespace Materialklang
                     e.LogZeit = jetzt; e.LogD = d;
                     KlangLog.Text((e.Klasse == QuellKlasse.Laut ? "[Signal] " : "[Fixed] ") + e.Name + " ('" + (e.Klasse == QuellKlasse.Laut ? e.Wort : QuellRegelKern.Name(e.Klasse)) + "', " + e.Gruppe + ") clip=" + (e.Klang ?? "-") +
                                   " | d=" + d.ToString("F1", inv) + " m | range " + e.MaxAlt.ToString("0.#", inv) + " -> " + e.MaxNeu.ToString("0.#", inv) +
-                                  " m, r0 " + e.R0.ToString("F1", inv) + " m | curve " + Db(neu, inv) + " (game " + (alt <= 1e-6 ? "silent" : Db(alt, inv)) + "), before occlusion");
+                                  " m, ref " + e.R0.ToString("F1", inv) + " m | curve " + Db(neu, inv) + " (game " + (alt <= 1e-6 ? "silent" : Db(alt, inv)) + "), before occlusion");
                 }
             }
             catch (Exception ex) { Fehler(ex); }

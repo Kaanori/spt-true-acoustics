@@ -16,6 +16,9 @@ namespace Materialklang
     {
         public const float FcOffen = 20000f;
         public const int MaxKanaele = 8;
+        /// <summary>0.8.6: kleinster Faktor (-60 dB = 60 dB Wand x Lautheit 1,0, das Hoechste der Rechnung). Der Filter darf nie stumm schalten.</summary>
+        public const float MinGain = 0.001f;
+        public const float MaxGain = 1.4126f;   // 0.8.6 Kalibrierung: hoechstens +3 dB (KalibrierKern.MaxAnheben; bis 0.8.6-dev +15 dB)
 
         // vom Hauptfaden gesetzt
         public volatile float ZielGain = 1f, ZielFc = 22000f, Tau = 0.1f;
@@ -31,7 +34,7 @@ namespace Materialklang
         public float AktuellGain => g;
         public float AktuellFc => fc;
 
-        public static bool IstNeutral(float gain, float fc) => gain >= 0.9999f && fc >= FcOffen;
+        public static bool IstNeutral(float gain, float fc) => gain >= 0.9999f && gain <= 1.0001f && fc >= FcOffen;
 
         public void Verarbeiten(float[] data, int kanaele)
         {
@@ -40,14 +43,17 @@ namespace Materialklang
             if (n <= 0) return;
             float fs = Fs > 1000f ? Fs : 48000f;
             float zg = ZielGain, zf = ZielFc;
-            if (!(zg >= 0f)) zg = 1f; if (zg > 1f) zg = 1f;
-            if (!(zf > 0f)) zf = 22000f;
+            // 0.8.6: ungueltige Ziele = Durchlass, nie unter MinGain (kein Stummschalten), Zustand ohne NaN/Inf
+            if (!(zg >= 0f) || float.IsInfinity(zg)) zg = 1f; if (zg > MaxGain) zg = MaxGain; if (zg < MinGain) zg = MinGain;
+            if (!(zf > 0f) || float.IsInfinity(zf)) zf = 22000f;
+            if (!(g >= MinGain) || g > MaxGain) g = 1f;
+            if (!(fc > 0f) || float.IsInfinity(fc)) fc = 22000f;
             float g0 = g, g1, f1;
             if (Springen) { Springen = false; g1 = zg; f1 = zf; g0 = zg; }
             else
             {
                 float tau = Tau;
-                float k = tau <= 1e-4f ? 1f : 1f - (float)Math.Exp(-(n / fs) / tau);
+                float k = !(tau > 1e-4f) || float.IsInfinity(tau) ? 1f : 1f - (float)Math.Exp(-(n / fs) / tau);
                 g1 = g + (zg - g) * k;
                 f1 = (float)Math.Exp(Math.Log(fc) + (Math.Log(zf) - Math.Log(fc)) * k);
                 if (Math.Abs(g1 - zg) < 1e-4f) g1 = zg;
@@ -87,11 +93,13 @@ namespace Materialklang
                     data[i] = x * gs;
                 }
             }
-            // Denormale vermeiden (Abklingen des Filters in Stille)
+            // Denormale vermeiden (Abklingen des Filters in Stille); 0.8.6: NaN/Inf im Speicher (kaputter Eingang) -> leeren statt
+            // die Quelle fuer immer stumm/kaputt zu halten
             for (int c = 0; c < ch; c++)
             {
                 if (Math.Abs(z1[c]) < 1e-20f) z1[c] = 0f;
                 if (Math.Abs(z2[c]) < 1e-20f) z2[c] = 0f;
+                if (float.IsNaN(z1[c]) || float.IsInfinity(z1[c]) || float.IsNaN(z2[c]) || float.IsInfinity(z2[c])) { z1[c] = 0f; z2[c] = 0f; }
             }
         }
 

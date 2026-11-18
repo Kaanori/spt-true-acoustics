@@ -17,15 +17,25 @@ namespace Materialklang
     //  - Versetzte Linie mit einer Flaeche naeher als NahGrenze an einem Ende, die die Mittellinie dort nicht hat -> Linie verworfen
     //    (ihr Ende liegt in/hinter Geometrie, die den echten Klang nicht verdeckt). Die uebrigen Linien zaehlen (Gewichte neu verteilt).
     //  - Flaechen ohne Gegenstueck (einseitige Meshes) bekommen die Dicke ihrer Gruppe (Bauakustik.EinzelDicke) statt immer 0,15 m.
-    internal struct WandTreffer { public float T; public int Id; }   // T = Abstand vom Linienanfang A (m), auch fuer den Gegenstrahl
-    internal struct WandStueck { public int Id; public float Dicke; public bool Einzeln; public float Start; }   // Start = Abstand von A (m), 0.8.4
+    // 10.11. (akustik-wand, Befund 2): Cos = |cos| zwischen Flaechennormale und Linie (0 = unbekannt -> wie senkrecht). Die Massengesetz-
+    // Daemmung braucht die Flaechenmasse der PLATTE (Dichte x Dicke senkrecht zur Flaeche); das Feldeinfall-Massengesetz mittelt schon ueber
+    // alle Einfallswinkel, schraeger Einfall erhoeht R nie (Cremer/Heckl; Bies, Hansen & Howard Kap. 7). Bis 10.11. zaehlte die Strahllaenge
+    // durch das Material: 15 cm Beton unter 45 Grad wie 21 cm (+4,6 dB bei 250 Hz), unter 60 Grad wie 30 cm (+9,1 dB). Die Wegsuche rechnet
+    // schon so (Dicke x |cos|, Untergrenze 0,05, Schallweg/SwSuche.cs).
+    internal struct WandTreffer { public float T; public int Id; public float Y, Ny; public float Cos; }   // T = Abstand vom Linienanfang A (m), auch fuer den Gegenstrahl; 0.8.6: Hoehe und Normale (y) des Treffers
+    internal struct WandStueck { public int Id; public float Dicke; public bool Einzeln; public float Start; public float Cos; }   // Start = Abstand von A (m), 0.8.4; Dicke = Strahllaenge
     // 0.8.4: Lage eines Wandstuecks auf der Linie (A..B in m ab Linienanfang; Einzelflaeche: A = B = Trefferpunkt) und Ergebnis-Schicht.
-    internal struct WandLage { public float A, B; public bool Einzeln; public int G; public int Id; }
-    internal struct WandSchicht { public int G; public float Dicke; public int Id; public int Teile; }
+    internal struct WandLage { public float A, B; public bool Einzeln; public int G; public int Id; public float Cos; }
+    // 10.11.: Dicke = gleichwertige Dicke SENKRECHT zur Flaeche; A/B = Lage auf der Linie (fuer den Abstand getrennter Schichten, Befund 6)
+    internal struct WandSchicht { public int G; public float Dicke; public int Id; public int Teile; public float A, B, Cos; }
     internal enum LinienBefund { Gemessen, EndeVerdeckt, Luecke }
 
     internal static class WandLinie
     {
+        /// <summary>10.11. (Befund 2): Faktor Strahllaenge -> Dicke senkrecht zur Flaeche. 0 = unbekannt -> 1; Untergrenze 0,05 wie die Wegsuche
+        /// (streifender Treffer: die Normale ist dort unzuverlaessig).</summary>
+        internal static float Senkrecht(float cos) => cos > 0f ? Math.Max(0.05f, Math.Min(1f, cos)) : 1f;
+
         /// <summary>Flaechen naeher als das (m) an einem Ende einer VERSETZTEN Linie: Kreis 0,25 m + 5 cm.</summary>
         internal const float NahGrenze = 0.3f;
         const float Gleich = 0.01f;     // dieselbe Flaeche aus beiden Richtungen
@@ -94,7 +104,7 @@ namespace Materialklang
                 if (benutzt[i]) continue;
                 benutzt[i] = true;
                 int id = ev[i].Id;
-                float start = ev[i].T;
+                float start = ev[i].T, cosStart = ev[i].Cos;   // Normale der Eintrittsflaeche (wie die Wegsuche)
                 bool offen = true;
                 for (int j = i + 1; j < m; j++)
                 {
@@ -102,12 +112,12 @@ namespace Materialklang
                     benutzt[j] = true;
                     if (offen)
                     {
-                        if (nStuecke < stuecke.Length) stuecke[nStuecke++] = new WandStueck { Id = id, Dicke = ev[j].T - start, Einzeln = false, Start = start };
+                        if (nStuecke < stuecke.Length) stuecke[nStuecke++] = new WandStueck { Id = id, Dicke = ev[j].T - start, Einzeln = false, Start = start, Cos = cosStart };
                         offen = false;
                     }
-                    else { start = ev[j].T; offen = true; }
+                    else { start = ev[j].T; cosStart = ev[j].Cos; offen = true; }
                 }
-                if (offen && nStuecke < stuecke.Length) stuecke[nStuecke++] = new WandStueck { Id = id, Dicke = 0f, Einzeln = true, Start = start };
+                if (offen && nStuecke < stuecke.Length) stuecke[nStuecke++] = new WandStueck { Id = id, Dicke = 0f, Einzeln = true, Start = start, Cos = cosStart };
             }
             return luecke ? LinienBefund.Luecke : LinienBefund.Gemessen;
         }
@@ -158,7 +168,7 @@ namespace Materialklang
                 if (g < 0 || g >= dichte.Length || !schalenGruppe[g]) continue;
                 for (int j = i + 1; j < n; j++)
                 {
-                    if (lg[j].A - lg[i].A > massiv[g]) break;
+                    if ((lg[j].A - lg[i].A) * Senkrecht(lg[i].Cos) > massiv[g]) break;   // 10.11.: Wanddicke senkrecht, nicht Strahllaenge
                     if (weg[j] || !lg[j].Einzeln || lg[j].G != g || lg[j].Id == lg[i].Id) continue;
                     lg[i].B = Math.Max(lg[j].A, lg[i].A + einzel[g]);
                     lg[i].Einzeln = false;
@@ -199,15 +209,15 @@ namespace Materialklang
             {
                 float x0 = punkte[p], x1 = punkte[p + 1];
                 if (x1 - x0 <= 1e-5f) continue;
-                float mitte = 0.5f * (x0 + x1), rho = 0f; int gBest = -1;
+                float mitte = 0.5f * (x0 + x1), rho = 0f, cos = 1f; int gBest = -1;
                 for (int i = s; i < e; i++)
                 {
                     if (weg[i] || lg[i].Einzeln || lg[i].A > mitte || lg[i].B < mitte) continue;
                     int g = lg[i].G;
                     if (g < 0 || g >= ng) continue;
-                    if (gBest < 0 || dichte[g] > rho) { rho = dichte[g]; gBest = g; }
+                    if (gBest < 0 || dichte[g] > rho) { rho = dichte[g]; gBest = g; cos = Senkrecht(lg[i].Cos); }
                 }
-                if (gBest >= 0) masseG[gBest] += rho * (x1 - x0);
+                if (gBest >= 0) masseG[gBest] += rho * (x1 - x0) * cos;   // 10.11. (Befund 2): Flaechenmasse = Dichte x Dicke senkrecht
             }
             for (int i = s; i < e; i++)
             {
@@ -229,14 +239,16 @@ namespace Materialklang
             int gd = -1; float summe = 0f;
             for (int g = 0; g < ng; g++) { summe += masseG[g]; if (masseG[g] > 0f && (gd < 0 || masseG[g] > masseG[gd])) gd = g; }
             if (gd < 0 || summe <= 0f || dichte[gd] <= 0f) return false;
-            int id = 0; float best = -1f;
+            int id = 0; float best = -1f, cosId = 1f, a0 = float.MaxValue, b0 = float.MinValue;
             for (int i = s; i < e; i++)
             {
-                if (weg[i] || lg[i].G != gd) continue;
+                if (weg[i]) continue;
+                a0 = Math.Min(a0, lg[i].A); b0 = Math.Max(b0, lg[i].B);
+                if (lg[i].G != gd) continue;
                 float d = lg[i].Einzeln ? einzel[gd] : lg[i].B - lg[i].A;
-                if (d > best) { best = d; id = lg[i].Id; }
+                if (d > best) { best = d; id = lg[i].Id; cosId = Senkrecht(lg[i].Cos); }
             }
-            sch = new WandSchicht { G = gd, Dicke = summe / dichte[gd], Id = id, Teile = teile };
+            sch = new WandSchicht { G = gd, Dicke = summe / dichte[gd], Id = id, Teile = teile, A = a0, B = b0, Cos = cosId };
             return true;
         }
 

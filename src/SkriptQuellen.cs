@@ -218,27 +218,32 @@ namespace Materialklang
         // =========================================================================================
         //  Gemeinsam: Kurven (Cache), Marken (Release stellt den Spielstand her), laufende Quellen, Log
         // =========================================================================================
-        internal sealed class Fertig { public AnimationCurve Kurve; public Func<double, double> AltF; public float R0, Alt, Neu; }
+        internal sealed class Fertig { public AnimationCurve Kurve; public Func<double, double> AltF; public float R0, Alt, Neu; public UmgebungKern.Bezug Bez; }
         static readonly ConditionalWeakTable<AnimationCurve, Dictionary<long, Fertig>> kurven = new ConditionalWeakTable<AnimationCurve, Dictionary<long, Fertig>>();
 
-        static Fertig Holen(AnimationCurve basis, double alt, double neu)
+        static Fertig Holen(AnimationCurve basis, double alt, double neu, SkriptArt art)
         {
             if (basis == null || basis.length < 2 || !(alt > 0) || !(neu > 0)) return null;
             var d = kurven.GetValue(basis, _ => new Dictionary<long, Fertig>());
-            long k = SkriptQuellenKern.Schluessel(alt, neu);
+            long k = SkriptQuellenKern.Schluessel(alt, neu) ^ ((long)art << 56);   // 0.8.6: Abstandsgesetz je Art
             if (d.TryGetValue(k, out var f)) return f;
-            f = Bauen(FesteQuellen.AltFunktion(AudioRolloffMode.Custom, basis, 0f, (float)alt), alt, neu);
+            f = Bauen(FesteQuellen.AltFunktion(AudioRolloffMode.Custom, basis, 0f, (float)alt), alt, neu, art);
             d[k] = f;
             return f;
         }
 
-        static Fertig Bauen(Func<double, double> altF, double alt, double neu)
+        /// <summary>0.8.6 Abstandskurve: Bezugsabstand und Abstandsgesetz der Art (QuellPegelKern.Mass). Der Clip wechselt je Abspielen
+        /// und die Kurve wird je Spielkurve geteilt - der Clip-Pegel ist hier unbekannt (ueberDb NaN): laute Arten (Lok, Flugzeug,
+        /// Horn, Pfeifen, Tor, BTR-Turm, Fackel) und Arten ohne Pegel (Tueren, Landung, Leuchtpatrone) behalten die Kurve bis 0.8.6-dev
+        /// (UmgebungKern.KlipGrenze).</summary>
+        static Fertig Bauen(Func<double, double> altF, double alt, double neu, SkriptArt art)
         {
             if (!(altF(0.0) > 0)) return null;
-            var kk = UmgebungKern.Bauen(altF, alt, neu, 0.0, out double r0);
+            var pa = QuellPegelKern.Von(art);
+            var kk = UmgebungKern.Bauen(altF, alt, neu, 0.0, QuellPegelKern.Mass(art), double.NaN, out var bez, QuellPegelKern.DbA(pa), Kalibrierung.K());
             var keys = new Keyframe[kk.Length];
             for (int i = 0; i < kk.Length; i++) keys[i] = new Keyframe(kk[i].T, kk[i].V, kk[i].In, kk[i].Out);
-            return new Fertig { Kurve = new AnimationCurve(keys), AltF = altF, R0 = (float)r0, Alt = (float)alt, Neu = (float)neu };
+            return new Fertig { Kurve = new AnimationCurve(keys), AltF = altF, R0 = (float)bez.Ref, Alt = (float)alt, Neu = (float)neu, Bez = bez };
         }
 
         sealed class Marke { public bool An; public AnimationCurve AltKurve; public float Alt; public int Stand = -1; public float Soll; }
@@ -294,7 +299,7 @@ namespace Materialklang
             double neu = Soll(art, alt);
             Fertig f = null;
             bool an = Wirksam(art) && SkriptQuellenKern.Lohnt(art, alt, neu);
-            if (an) { f = Holen(altKurve, alt, neu); an = f != null; }
+            if (an) { f = Holen(altKurve, alt, neu, art); an = f != null; }
             marken.TryGetValue(q, out var m);
             if (an)
             {
@@ -308,7 +313,8 @@ namespace Materialklang
             // 0.8.5: Arten ohne Okklusion im Spiel -> eigene Wanddaempfung (in der Luft: nur das Stueck vor dem Ohr; Einmal-Klaenge sofort)
             if (!SkriptQuellenKern.Von(art).Okklusion)
                 WandDaempfung.Melden(q.source1, an, "scripted", SkriptQuellenKern.Name(art) + " " + name,
-                                     himmel: art == SkriptArt.Flugzeug || art == SkriptArt.Pfeifen, sofort: !lauf, eigen: an ? EigenWurzel(art, q) : null);
+                                     himmel: art == SkriptArt.Flugzeug || art == SkriptArt.Pfeifen, sofort: !lauf, eigen: an ? EigenWurzel(art, q) : null, pegel: QuellPegelKern.Von(art),
+                                     bezug: an && f != null ? FesteQuellen.KalBezug(f.Bez) : double.NaN);
             if (lauf)
             {
                 int id = q.GetInstanceID();
@@ -395,7 +401,7 @@ namespace Materialklang
               .Append(s != null && s.clip != null ? s.clip.name : "-").Append(", mixer ")
               .Append(s != null && s.outputAudioMixerGroup != null ? s.outputAudioMixerGroup.name : "-").Append(')');
             sb.Append(" | d=").Append(d >= 0 ? d.ToString("F1", inv) : "?").Append(" m | range ").Append(alt.ToString("0.#", inv));
-            if (f != null) sb.Append(" -> ").Append(f.Neu.ToString("0.#", inv)).Append(" m (r0 ").Append(f.R0.ToString("F1", inv)).Append(" m)");
+            if (f != null) sb.Append(" -> ").Append(f.Neu.ToString("0.#", inv)).Append(" m (").Append(FesteQuellen.BezugText(f.Bez, QuellPegelKern.Von(art), inv)).Append(')');
             else sb.Append(" m unchanged").Append(Wirksam(art) ? "" : " (off)");
             if (d >= 0 && f != null)
             {
@@ -562,7 +568,7 @@ namespace Materialklang
             if (an && (q.F == null || q.F.Alt != q.Alt || Math.Abs(q.F.Neu - neu) > 0.01))
             {
                 var altF = FesteQuellen.AltFunktion(q.Modus, q.Kurve, q.Min, q.Alt);
-                q.F = QuellRegelKern.Kandidat(s.spatialBlend, q.Alt, (float)altF(0.0)) ? Bauen(altF, q.Alt, neu) : null;
+                q.F = QuellRegelKern.Kandidat(s.spatialBlend, q.Alt, (float)altF(0.0)) ? Bauen(altF, q.Alt, neu, q.Art) : null;
             }
             an = an && q.F != null;
             if (an)
@@ -579,7 +585,7 @@ namespace Materialklang
             }
             q.An = an;
             Zaehlen(q.Art, q.Alt, an ? q.F.Neu : q.Alt, an);
-            WandDaempfung.Melden(s, an, "scripted", SkriptQuellenKern.Name(q.Art) + " " + q.Rolle, eigen: q.L != null ? q.L.transform : null);   // 0.8.5
+            WandDaempfung.Melden(s, an, "scripted", SkriptQuellenKern.Name(q.Art) + " " + q.Rolle, eigen: q.L != null ? q.L.transform : null, pegel: QuellPegelKern.Von(q.Art), bezug: an && q.F != null ? FesteQuellen.KalBezug(q.F.Bez) : double.NaN);   // 0.8.5 (0.8.6: Bezugsabstand)
             int id = s.GetInstanceID();
             if (!laufend.TryGetValue(id, out var l)) laufend[id] = l = new Lauf();
             l.A = s; l.B = null; l.Art = q.Art; l.Name = q.Rolle + " " + s.gameObject.name; l.Alt = q.Alt; l.F = an ? q.F : null; l.Neustellen = null; l.LetztD = -1;

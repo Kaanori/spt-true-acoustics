@@ -53,7 +53,7 @@ namespace Materialklang
         internal static float LpEnde = float.NaN, HpEnde = float.NaN, LuftHz = float.NaN, FarbeH = float.NaN, FarbeL = float.NaN;
         internal static float WaldM = float.NaN, WaldDb = float.NaN, WaldHz = float.NaN;   // Wald (Laubdaempfung) des Geraeusches, das gerade verarbeitet wird
 
-        struct SebWert { public double Zeit; public float W, Db, DirLp, LuftHz, Lp, WaldM, WaldHz, FernDb; public bool Gedaempft, FernMitte; }
+        struct SebWert { public double Zeit; public float W, Db, DirLp, LuftHz, Lp, WaldM, WaldHz, FernDb, NahR, NahK; public bool Gedaempft, FernMitte, V1, Schleife; }
         static readonly Dictionary<int, SebWert> sebWerte = new Dictionary<int, SebWert>(64);
 
         static readonly ConditionalWeakTable<TransmissionCalculator, TransInfo> transTab =
@@ -80,6 +80,7 @@ namespace Materialklang
 
             An = Aktiv.Value;
             Aktiv.SettingChanged += (_, __) => { An = Aktiv.Value; if (!An) limiter.Leeren(); };
+            KlangExport.Binden(c);   // 10.11.2026: gehoerte Clips fuer den Raid-Abspieler der Demo (Standard aus)
         }
 
         internal static void Anwenden(Harmony h)
@@ -106,14 +107,17 @@ namespace Materialklang
             Wetter.RaidStart();      // Wetter zuerst lesen: steht dann im Kopf der Log-Datei
             Wald.RaidStart();
             Schliessen();
+            imRaid = true;
             if (An) DateiOeffnen();
         }
 
-        internal static void RaidEnde() { Schliessen(); Wetter.RaidEnde(); Wald.RaidEnde(); }
+        internal static void RaidEnde() { Schliessen(); KlangExport.RaidEnde(); imRaid = false; Wetter.RaidEnde(); Wald.RaidEnde(); }
+        static bool imRaid;   // Gesamtreview C7: Dateien ausserhalb des Raids (Menue-MARK) eigens benannt und gezaehlt
 
         internal static void SzeneGewechselt()
         {
-            colNamen.Clear(); quellNamen.Clear(); besitzerNamen.Clear(); raumNamen.Clear(); sebWerte.Clear(); limiter.Leeren();
+            colNamen.Clear(); quellNamen.Clear(); besitzerNamen.Clear(); raumNamen.Clear(); sebWerte.Clear(); limiter.Leeren(); clipNamen.Clear();
+            SebGruppe.Leeren();   // occludedmixer (17.11.)
         }
 
         static void Schliessen()
@@ -122,7 +126,7 @@ namespace Materialklang
             offen = false;
         }
 
-        internal static void Beenden() { schreiber.Beenden(); offen = false; }
+        internal static void Beenden() { schreiber.Beenden(); offen = false; KlangExport.Beenden(); }
 
         static void DateiOeffnen()
         {
@@ -130,7 +134,7 @@ namespace Materialklang
             {
                 string karte = SceneManager.GetActiveScene().name;
                 string dir = Path.Combine(BepInEx.Paths.BepInExRootPath, "Materialklang-Logs");
-                string name = LogRotation.Dateiname(DateTime.Now, karte);
+                string name = LogRotation.Dateiname(DateTime.Now, karte, imRaid);
                 schreiber.Oeffnen(dir, name, Behalte.Value, (long)MaxMB.Value * 1024 * 1024, Kopf(karte));
                 offen = true;
                 Plugin.Log.LogInfo("Sound log: " + Path.Combine(dir, name));
@@ -159,6 +163,9 @@ namespace Materialklang
             return sb.ToString();
         }
 
+        /// <summary>0.8.6: Datei des laufenden Raids offen? (Text() verwirft Zeilen davor - wer nur einmal schreibt, muss darauf warten.)</summary>
+        internal static bool Offen => offen;
+
         /// <summary>Eine Textzeile (z.B. "[Live] ...") in das Log, sobald eine Datei offen ist.</summary>
         internal static void Text(string zeile)
         {
@@ -179,6 +186,8 @@ namespace Materialklang
             var lt = ba != null ? ba.ListenerTransform : null;
             if (lt != null) { var p = lt.position; e.PosX = p.x; e.PosY = p.y; e.PosZ = p.z; }
             schreiber.Einreihen(e);
+            if (lt != null) WandDaempfung.Marke(lt.position);   // 0.8.6: Ist-Zustand der Quellen ohne Spiel-Okklusion in der Naehe
+            if (lt != null) Wegsuche.Marke(lt.position);        // 0.8.6 Abschnitt 19: Wege der Quellen in der Naehe
             Plugin.Log.LogInfo($"Sound log: === MARK {markNr} ===");
             Ton(EFT.UI.EUISoundType.QuestSubTrackComplete);
         }
@@ -201,11 +210,27 @@ namespace Materialklang
 
         internal static TransInfo TransHole(TransmissionCalculator c) => transTab.GetValue(c, _ => new TransInfo());
 
-        internal static void SebMerken(BetterSource q, float w, float db, float dirLp, float luftHz, float lp, float waldM, float waldHz, bool gedaempft = false)
+        internal static void SebMerken(BetterSource q, float w, float db, float dirLp, float luftHz, float lp, float waldM, float waldHz, bool gedaempft = false,
+                                       bool v1 = false, bool schleife = false)   // v1waffen (12.11.): Schuss ueber SEBs V1-Weg, Schleifenclip
         {
             if (q == null) return;
-            float fernDb = Fernschuss.LogDb(q, out bool fernMitte);   // 0.8.4: 13. Distance (SEB)
-            sebWerte[q.GetInstanceID()] = new SebWert { Zeit = KlangSchreiber.Jetzt(), W = w, Db = db, DirLp = dirLp, LuftHz = luftHz, Lp = lp, WaldM = waldM, WaldHz = waldHz, Gedaempft = gedaempft, FernDb = fernDb, FernMitte = fernMitte };
+            float fernDb = Fernschuss.LogDb(q, out bool fernMitte, out float nahR, out float nahK);   // 0.8.4: 13. Distance (SEB); nahkennlinie: Abfall re Anker
+            sebWerte[q.GetInstanceID()] = new SebWert { Zeit = KlangSchreiber.Jetzt(), W = w, Db = db, DirLp = dirLp, LuftHz = luftHz, Lp = lp, WaldM = waldM, WaldHz = waldHz, Gedaempft = gedaempft, FernDb = fernDb, NahR = nahR, NahK = nahK, FernMitte = fernMitte, V1 = v1, Schleife = schleife };
+        }
+
+        // v1waffen (12.11.): Clipname der Schuesse. Schuesse starten mit PlayScheduled, das _lastPlayingClipName nicht setzt (nur
+        // BetterSource.Play, BetterSource.cs:437) -> bisher "clip=-". Nur Gruppe Gunshots und nur, solange die Quelle spielt ("clip=-"
+        // heisst weiter: spielt nicht). Name einmal je Clip (AudioClip.name legt jedes Mal eine Zeichenkette an).
+        static readonly Dictionary<int, string> clipNamen = new Dictionary<int, string>(128);
+        static string SchussClip(BetterSource s)
+        {
+            var a = s.source1;
+            if (a == null || !a.isPlaying) return null;
+            var c = a.clip;
+            if (c == null) return null;
+            int id = c.GetInstanceID();
+            if (!clipNamen.TryGetValue(id, out var n)) { n = c.name; if (clipNamen.Count > 4096) clipNamen.Clear(); clipNamen[id] = n; }
+            return n;
         }
 
         // Postfix FilterCutoffCalculator.Compute (zuletzt): endgueltige Grenzfrequenzen merken
@@ -235,6 +260,7 @@ namespace Materialklang
             if (!limiter.Erlaubt(source.GetInstanceID(), KlangSchreiber.Jetzt())) return;
             if (!offen) DateiOeffnen();
             if (!offen) return;
+            KlangExport.Merken(source);   // "Save heard sounds for the demo" (aus = ein Feld gelesen)
 
             var e = schreiber.Holen();
             e.Art = LogArt.Klang;
@@ -247,6 +273,8 @@ namespace Materialklang
             e.Gruppentyp = preset != null ? TypName(preset.Type) : "?";
             e.Klang = klang;
             e.Typ = KlangArt(klang, e.Gruppentyp);
+            // v1waffen: Schuesse ohne _lastPlayingClipName (PlayScheduled) -> Clip der Quelle; die Art bleibt die des Spiels (Gunshots)
+            if (string.IsNullOrEmpty(klang) && preset != null && preset.Type == BetterAudio.AudioSourceGroupType.Gunshots) e.Klang = SchussClip(source);
             e.Quelle = QuellName(source);
             var cont = occ.SourceContainer;
             e.Besitzer = cont != null ? BesitzerName(cont._parentTransform) : null;
@@ -277,6 +305,9 @@ namespace Materialklang
                 tc = Kontext.MultiCalc;
             }
             if (pc == null) pc = Raumweg.RechnerVon(occ);   // 0.8.4: MultiSource/ContinuousPropagated haben ihren Raumweg-Rechner woanders
+            // 10.11.: Instanzen (Pool-Wiederverwendung im Log sichtbar: gleiche src#/calc# bei anderem Besitzer)
+            e.QuellId = source.GetInstanceID(); e.OccId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(occ);
+            e.RechnerId = pc != null ? System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(pc) : 0;
             e.Strahlen = e.FreieStrahlen = e.StueckAnzahl = 0;
             if (!e.Propagation && tc != null && transTab.TryGetValue(tc, out var ti))
             {
@@ -288,28 +319,49 @@ namespace Materialklang
                 e.WertRoute = pc._propagationScore;
                 if (e.Propagation) WandZwischenRaeumen.LogDaten(pc, e, colNameF);
                 if (e.Propagation) e.RaumwegText = Raumweg.LogText(occ, out _);   // 0.8.4: Portalkette (nur path=rooms)
+                if (e.Propagation && e.RaumwegText != null) { e.RichtungText = Richtung.LogText(source, occ); var zt = Zweitstimme.LogText(source); if (zt != null) e.RichtungText += zt; }   // 0.8.6; mehrweg: weitere Stimmen
             }
             e.Weg = ZeilenFormat.WegWahl(e.Propagation, e.Wirkung, e.WertT, e.WertD, e.WertR, e.WertRoute, e.WertWand);
             e.WegeText = e.Propagation ? Wege.RaumLogText(occ, pc) : Wege.LogText(occ);   // 0.8.4 Stufe 1
+            if (!e.Propagation && e.WegeText != null) { var rk = Richtung.LogTextKante(source); if (rk != null) e.WegeText += rk; }   // wegrichtung (13.11.)
 
             // ---- Ergebnis ----
             e.Lautstaerke = occ.CurrentParameters.OcclusionVolumeFactor;
+            // 10.11. (B1): wie weit die angewandte Lautstaerke vom Soll fuer den aktuellen Stand liegt (nur Combined, im Bild gemessen)
+            if (Physik.TaktAbstand(occ, source, out float volAb, out bool volFrisch)) { e.VolAbstand = volAb; e.VolFrisch = volFrisch; }
+            e.Fremd = FremdPegel.LogText(source != null ? source.source1 : null);   // galpegel (10.11.)
+            e.SendIst = Physik.SendJetzt(source, out e.SendPreset);   // sendsprung (12.11.): Send je Quelle, nicht je Rechner
+            if (source != null && source.Spatializer != null)   // schusshrtf (12.11.): welcher Weg spielt (Meta-HRTF oder Stereo-Panning)
+            { e.Raeumlich = source.EnableSpatialization ? 1 : 0; e.RaeumlichMod = e.Raeumlich == 1 && SchussRaum.VomSchalter(source); }
+            e.DiffusTrocken = Physik.DiffusTrockenFeld(source);   // diffushoerbar (17.11.)
+            e.Ruhe = Physik.RuheFeld(source);   // diffusflattern (17.11.)
+            e.LampePegel = Kalibrierung.LampeFeld(source);   // lampenpegel (18.11.): Spielpegel, Soll, Raumfeld, angewandte Korrektur
+            e.MetaOccl = MetaVerdeckung.LogFeld(source);   // metaschalter (17.11.): Metas eigene Verdeckung (Parameter 17) an dieser Quelle
             e.Tiefpass = LpEnde; e.Hochpass = HpEnde;
+            if (!Physik.FarbeLog(source, out e.KurveReal4k, out e.KurveSpiel4k, out e.KurveG)) { e.KurveReal4k = e.KurveSpiel4k = float.NaN; e.KurveG = 1f; }   // farbekennlinie
+            // blechschuss (17.11.): welches Filtermodell der Fit nahm und was der (gemessen 4-polige) Spielfilter bei 8 kHz gegenueber dem
+            // Bezugsband wirklich wegnimmt
+            e.Spiel24 = Wege.Spiel24An;
+            e.HpPhysik = Physik.HochpassPhysikAn != null && Physik.HochpassPhysikAn.Value;   // blechbass (17.11.)
+            e.Spiel8k = (float)SpielfilterKern.MehrDbRelativ(e.Tiefpass, 8000, Wege.Frequenzen()[0], SpielfilterKern.PoleSpiel);
             e.Physik = Physik.An;
             e.RohDb = Physik.Dynamik.Value * e.Wirkung;
+            e.KennS = KennGruppeLauf.Log(source);   // explosionfern (17.11.): Steigung aus der Abstandskurve (NaN = Einstellung)
             e.Lautheit = Physik.Lautheit.Value;
             // 0.8.5: Hoerbarkeit je Band (ersetzt das breitbandige Knie im Log; neu gerechnet fuer genau diese Quelle, zaehlt nicht
             // in der Diagnose) und Quellposition/Hoehenunterschied
             e.HoerBand = false;
-            if (Physik.Hoeren(occ, source, source.Position, e.Wirkung, out _))
+            if (Physik.Hoeren(occ, source, Richtung.Echt(source), e.Wirkung, out _))
             {
                 var hb = Physik.HoerErg;
                 e.HoerBand = true;
                 for (int b = 0; b < Hoerbarkeit.NB; b++) { e.HoerUeber[b] = (float)hb.Ueber[b]; e.HoerD[b] = (float)hb.D[b]; }
                 e.HoerDb = (float)hb.Lautstaerke;
+                e.HoerKorr = (float)Physik.HoerKorr;   // 10.11. (B1)
             }
+            else e.HoerKorr = 0f;
             {
-                var qp = source.Position;
+                var qp = Richtung.Echt(source);   // 0.8.6: echter Ort (nicht die Richtung ueber die Oeffnung)
                 e.QX = qp.x; e.QY = qp.y; e.QZ = qp.z;
                 var lt = occ.ListenerTransform;
                 e.Dy = lt != null ? qp.y - lt.position.y : float.NaN;
@@ -320,19 +372,21 @@ namespace Materialklang
             // ---- SEB (nur Schuesse, nur wenn frisch) ----
             if (sebWerte.TryGetValue(source.GetInstanceID(), out var sw) && KlangSchreiber.Jetzt() - sw.Zeit < 1.5)
             {
-                e.HatSeb = true; e.SebW = sw.W; e.SebDb = sw.Db; e.SebDirLp = sw.DirLp; e.SebLuftHz = sw.LuftHz; e.SebLp = sw.Lp; e.SebWaldM = sw.WaldM; e.SebWaldHz = sw.WaldHz; e.SebGedaempft = sw.Gedaempft; e.SebFernDb = sw.FernDb; e.SebFernMitte = sw.FernMitte;
+                e.HatSeb = true; e.SebW = sw.W; e.SebDb = sw.Db; e.SebDirLp = sw.DirLp; e.SebLuftHz = sw.LuftHz; e.SebLp = sw.Lp; e.SebWaldM = sw.WaldM; e.SebWaldHz = sw.WaldHz; e.SebGedaempft = sw.Gedaempft; e.SebFernDb = sw.FernDb; e.SebNahR = sw.NahR; e.SebNahK = sw.NahK; e.SebFernMitte = sw.FernMitte; e.SebV1 = sw.V1; e.SebSchleife = sw.Schleife;
+                e.SebGruppe = SebGruppe.Zustand(source.GetInstanceID());   // occludedmixer (17.11.): Mixergruppe dieses Schusses
             }
 
             // ---- Hall (Zone, in der Quelle und Hoerer stehen) ----
             if (HallZonen.ZonenAnzahl > 0)
             {
-                if (HallZonen.Finde(source.Position, out var rn, out var rrt, out var rdb))
+                if (HallZonen.Finde(Richtung.Echt(source), out var rn, out var rrt, out var rdb))
                 { e.HallQuelle = rn; e.HallQuelleRt = rrt; e.HallQuelleDb = rdb; }
                 var ba = MonoBehaviourSingleton<BetterAudio>.Instance;
                 var lt = ba != null ? ba.ListenerTransform : null;
                 if (lt != null && HallZonen.Finde(lt.position, out var hn, out var hrt, out var hdb))
                 { e.HallHoerer = hn; e.HallHoererRt = hrt; e.HallHoererDb = hdb; }
             }
+            Wegsuche.Klang(occ, source, e);   // 0.8.6 Abschnitt 19: Vergleichszeile [PathSearch] (vor dem Einreihen: e gehoert danach dem Schreiber)
             schreiber.Einreihen(e);
         }
 
@@ -351,12 +405,14 @@ namespace Materialklang
             if (klangTypen.TryGetValue(klang, out var t)) return t;
             string k = klang.ToLowerInvariant();
             if (k.Contains("step") || k.Contains("foot") || k.Contains("sprint") || k.Contains("walk")) t = "Footstep";
+            // explosionfern (17.11.): Explosionen vor Tueren pruefen - "gren_expl2_indoor_distant" enthaelt "door" (in-door) und stand als
+            // "Door(Grenades)" im Log; "gren_expl*" enthaelt auch kein "explo".
+            else if (k.Contains("grenade") || k.Contains("explo") || k.StartsWith("gren_") || k.Contains("_expl")) t = "Explosion";
             else if (k.Contains("door") || k.Contains("hatch") || k.Contains("gate")) t = "Door";
             else if (k.Contains("shot") || k.Contains("fire") || k.Contains("silenc") || k.Contains("suppress")) t = "Gunshot";
             else if (k.Contains("vo_") || k.Contains("voice") || k.Contains("speech") || k.Contains("breath") || k.Contains("cough") || k.Contains("scream")) t = "Voice";
             else if (k.Contains("reload") || k.Contains("mag") || k.Contains("bolt") || k.Contains("charge") || k.Contains("rack") || k.Contains("click")) t = "WeaponHandling";
             else if (k.Contains("impact") || k.Contains("ricoch") || k.Contains("hit") || k.Contains("bullet")) t = "Impact";
-            else if (k.Contains("grenade") || k.Contains("explo")) t = "Explosion";
             else t = gruppe;
             klangTypen[klang] = t;
             return t;

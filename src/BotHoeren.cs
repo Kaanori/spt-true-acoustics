@@ -32,8 +32,8 @@ namespace Materialklang
         {
             const string s = "3. Bot Hearing (SAIN)";
             Modus = c.Bind(s, "Mode", BotModus.Off,
-                "Off = like SAIN. QuieterOnly = bots never hear through walls better than before, but concrete muffles more than wood. Replace = only the material counts. Needs SAIN (tested with 4.5.1). Takes effect after a game restart.");
-            Staerke = c.Bind(s, "Strength", 1f, new ConfigDescription("Multiplies the material attenuation for bots only.", new AcceptableValueRange<float>(0f, 3f)));
+                "Off = like SAIN. QuieterOnly = bots never hear through walls better than before, but concrete muffles more than wood. Replace = only the material counts. Needs SAIN (tested with 4.5.1). Takes effect after a game restart (switching to Off applies at once).");
+            Staerke = c.Bind(s, "Strength", 1f, new ConfigDescription("Multiplies the material attenuation for bots only. Physics mode: factor on the real insulation in dB (1 = real physics; the 'Loudness factor' for your ears does not change what bots hear). Sliders mode: factor on the slider values.", new AcceptableValueRange<float>(0f, 3f)));
             Exponent = c.Bind(s, "Exponent", 0.5f, new ConfigDescription("Remaining energy -> hearing range (0.5 = square root).", new AcceptableValueRange<float>(0.1f, 2f)));
             BodenSchuss = c.Bind(s, "Floor: gunshot", 0.35f, new ConfigDescription("Lowest hearing-range factor for gunshots.", new AcceptableValueRange<float>(0f, 1f)));
             BodenLeise = c.Bind(s, "Floor: suppressed shot", 0.25f, new ConfigDescription("Lowest hearing-range factor for suppressed shots.", new AcceptableValueRange<float>(0f, 1f)));
@@ -105,7 +105,8 @@ namespace Materialklang
 
         static void OcclusionPostfix(ref float __result)
         {
-            if (!hatKontext || __result >= 0.999f || !Plugin.Aktiv.Value) return;   // Sichtlinie frei -> unveraendert
+            // Gesamtreview B1: Modus "Off" zur Laufzeit (Patch bleibt bis zum Neustart) = wie SAIN
+            if (!hatKontext || __result >= 0.999f || !Plugin.Aktiv.Value || Modus.Value == BotModus.Off) return;   // Sichtlinie frei -> unveraendert
             try
             {
                 if (!Faktor(out float mat)) { Fallback++; return; }
@@ -133,7 +134,9 @@ namespace Materialklang
             { CacheTreffer++; f = Grenzen(e.faktor); return true; }
 
             if (Time.frameCount != budgetFrame) { budgetFrame = Time.frameCount; budgetRest = Budget.Value; }
-            if (budgetRest <= 0) { f = da ? Grenzen(e.faktor) : 1f; return da; }
+            // Gesamtreview B5: Budget leer -> alter Wert nur, wenn Quelle und Bot noch innerhalb der Toleranz stehen, sonst SAIN
+            bool nah = da && (e.q - kQuelle).sqrMagnitude < tol2 && (e.o - kOhr).sqrMagnitude < tol2;
+            if (budgetRest <= 0) { f = nah ? Grenzen(e.faktor) : 1f; return nah; }
             budgetRest--;
 
             // Exponent 0.5: Energie -> Amplitude; bei kugelfoermiger Ausbreitung (p ~ 1/r) skaliert die Hoerweite mit
@@ -172,9 +175,16 @@ namespace Materialklang
                 // einseitige Flaeche: Dicke je Gruppe (0.8.3, wie die Wand zwischen Raeumen; vorher fuer alles 0,1 m)
                 if (dicke < 0f) dicke = Bauakustik.EinzelDicke(m, StandardDicke.Value);
                 if (dicke > MaxDicke.Value) return 0f;
-                x += Physik.An ? Physik.Daemmung(m, dicke) : Plugin.Oberflaeche[m].Value + Plugin.Dicke[m].Value * dicke;
+                // 0.8.6: Tuer-Collider = Blatt der Tuer (wie Portal und Hindernis), nicht Gruppe x Strahllaenge
+                if (Physik.An) x += Physik.DaemmungStueck(einId[i], m, dicke);
+                else
+                {
+                    float ts = m == (int)Gruppe.Door ? TuerenFenster.TuerS(einId[i]) : -1f;
+                    x += ts >= 0f ? ts : Plugin.Oberflaeche[m].Value + Plugin.Dicke[m].Value * dicke;
+                }
             }
-            if (Physik.An) return Physik.EnergieAusDb(Mathf.Min(x, Physik.Dynamik.Value) * Physik.Lautheit.Value);   // Exponent 0.5 -> Amplitude = Hoerweite
+            // Gesamtreview B2: im Physik-Modus wirkt "Strength" (Bots), nicht der Loudness factor der Spieler-Ohren
+            if (Physik.An) return Physik.EnergieAusDb(Bauakustik.BotDb(x, Physik.Dynamik.Value, Staerke.Value));   // Exponent 0.5 -> Amplitude = Hoerweite
             return Mathf.Exp(-x * Plugin.Gesamtstaerke.Value * Staerke.Value);
         }
 

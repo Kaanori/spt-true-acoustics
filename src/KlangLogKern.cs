@@ -289,10 +289,17 @@ namespace Materialklang
         public bool HoerBand;                                              // 0.8.5: Hoerbarkeit je Band gerechnet
         public readonly float[] HoerUeber = new float[3], HoerD = new float[3];   // dB ueber der Mithoerschwelle / reale Daemmung je Band
         public float HoerDb;                                               // angewandte Daempfung (lautestes Band)
+        public float HoerKorr;                                             // 10.11. (B1): Pegel des Clips gegenueber dem Bezugsklang der Gruppe (dB)
         public float QX = float.NaN, QY = float.NaN, QZ = float.NaN, Dy = float.NaN;   // 0.8.5: Quellposition, Hoehe Quelle - Hoerer
         public float FarbeH = float.NaN, FarbeL = float.NaN, LuftHz = float.NaN;
+        public float KurveReal4k = float.NaN, KurveSpiel4k = float.NaN, KurveG = 1f;   // farbekennlinie (12.11.): Neigung 4 kHz real -> gespielt
+        public float KennS = float.NaN;   // explosionfern (17.11.): Kennlinien-Steigung aus der Abstandskurve der Gruppe (NaN = Einstellung)
+        public bool HpPhysik;   // blechbass (17.11.): Hochpass neutral statt 80 Hz des Spiels
+        public bool Spiel24; public float Spiel8k = float.NaN;   // blechschuss (17.11.): Fit-Modell 12/24 dB/Okt., Mehrdaempfung 8 kHz des Spielfilters
         public float WaldM = float.NaN, WaldDb = float.NaN, WaldHz = float.NaN;
         public int Strahlen, FreieStrahlen;
+        public int EinseitigeStrahlen, ZweiObjektStrahlen, DickeStrahlen;   // Gesamtreview: Strahlen ohne Durchgang (wie Vanilla NoPath)
+        public bool KeinStrahlErgebnis;                                    // kein einziger Strahl mit Ergebnis -> Wert unbestimmt
 
         public int StueckAnzahl; public readonly LogStueck[] Stuecke = NeueStuecke();
         public int WandAnzahl; public readonly LogStueck[] Wand = NeueStuecke();
@@ -302,12 +309,27 @@ namespace Materialklang
         public float SebWaldM = float.NaN, SebWaldHz = float.NaN;
         public bool SebGedaempft;
         public float SebFernDb = float.NaN;   // 0.8.4: 13. Distance (SEB), Pegelaenderung gegenueber SEB
+        public float SebNahR = float.NaN, SebNahK = float.NaN;   // nahkennlinie (18.11.): Abfall der Nah-Aufnahme re Anker nach 1/r / gespielt (ohne Luft)
         public bool SebFernMitte;
+        public bool SebV1, SebSchleife;   // v1waffen (12.11.): Schuss ueber SEBs V1-Weg (Spiel-Warteschlange), Schleifenclip
+        public byte SebGruppe;   // occludedmixer (17.11.): SebGruppeKern.Gunshots/OccludedSeb/Umgelegt, 0 = unbekannt
 
         public string HallQuelle, HallHoerer;
         public string RaumwegText;       // 0.8.4: Portalkette des physikalischen Raumwegs (beginnt mit " | room path:")
+        public string RichtungText;      // 0.8.6: " | direction: ..." (Richtung ueber die Oeffnung)
         public string WegeText;          // 0.8.4 Stufe 1: Beitrag jedes Wegs in dB und die Summe (beginnt mit " | paths")
         public float HallQuelleRt, HallQuelleDb, HallHoererRt, HallHoererDb;
+        public int QuellId, OccId, RechnerId;   // 10.11.: Instanz der Quelle / des Occluders / des Raumweg-Rechners (Pool-Wiederverwendung sichtbar), 0 = keine
+        public float VolAbstand = float.NaN;    // 10.11. (B1): angewandte - Soll-Daempfung (dB, > 0 = zu leise), NaN = nicht gemessen
+        public string Fremd;                    // galpegel (10.11.): Fremdverstaerkung der Mixergruppe (FremdPegel.LogText), null = keine
+        public bool VolFrisch;                  // 10.11. (B1): in diesem Anwenden voll gerechnet (Abstand 0)
+        public bool WandFrei;                   // mehrwand: Wand zwischen Raeumen ohne ein Wandstueck auf der mittleren Linie (freie Linie)
+        public float SendIst = float.NaN, SendPreset = float.NaN;   // sendsprung (12.11.): Reverb-Send am tragenden Spatializer DIESER Quelle nach dem Anwenden (dB)
+        public string Ruhe;   // diffusflattern (17.11.): " | level held ..." (QuellRuheKern.LogFeld), null = gerechnet
+        public string LampePegel;   // lampenpegel (18.11.): " | lamp level: ..." (Kalibrierung.LampeFeld), null = keine Lampe / Schalter aus
+        public string DiffusTrocken;   // diffushoerbar (17.11.): " | diffuse dry ..." (DiffusHoerbarKern.LogFeld), null = keine Aufteilung
+        public string MetaOccl;   // metaschalter (17.11.): " | meta occl x" (MetaVerdeckungKern.LogFeld), null = keine Meta-Quelle
+        public int Raeumlich = -1; public bool RaeumlichMod;      // schusshrtf (12.11.): 1 = Meta-Spatializer an, 0 = Stereo-Panning, -1 = unbekannt; Mod = Schalter "Gunshots: HRTF"
 
         static LogStueck[] NeueStuecke()
         {
@@ -322,10 +344,15 @@ namespace Materialklang
             Typ = Gruppentyp = Klang = Quelle = Besitzer = QuellRaum = HoererRaum = null;
             Weg = 0; Propagation = Physik = false;
             WertT = WertD = WertR = WertRoute = WertWand = float.NaN;
-            FarbeH = FarbeL = LuftHz = WaldM = WaldDb = WaldHz = SebWaldM = SebWaldHz = SebFernDb = float.NaN; SebGedaempft = SebFernMitte = false;
+            FarbeH = FarbeL = LuftHz = WaldM = WaldDb = WaldHz = SebWaldM = SebWaldHz = SebFernDb = SebNahR = SebNahK = float.NaN; SebGedaempft = SebFernMitte = SebV1 = SebSchleife = false; SebGruppe = 0;
             Strahlen = FreieStrahlen = 0; StueckAnzahl = WandAnzahl = 0;
-            HatSeb = false; HallQuelle = HallHoerer = null; RaumwegText = null; WegeText = null;
+            EinseitigeStrahlen = ZweiObjektStrahlen = DickeStrahlen = 0; KeinStrahlErgebnis = false;
+            HatSeb = false; HallQuelle = HallHoerer = null; RaumwegText = null; WegeText = null; RichtungText = null;
             Knie = QX = QY = QZ = Dy = float.NaN; HoerBand = false;
+            QuellId = OccId = RechnerId = 0;
+            VolAbstand = float.NaN; VolFrisch = false; Fremd = null; WandFrei = false;
+            SendIst = SendPreset = float.NaN;
+            Raeumlich = -1; RaeumlichMod = false; MetaOccl = null; DiffusTrocken = null; Ruhe = null; LampePegel = null;
         }
     }
 
@@ -335,6 +362,9 @@ namespace Materialklang
         {
             "direct", "through walls", "diffraction", "reflection", "via doors/windows (rooms)", "through wall between rooms", "unknown"
         };
+        /// <summary>mehrwand: Weg 5 ohne Wandstueck auf der mittleren Linie (freie Linie, z. B. durch eine offene Tuer) - kein "through wall".</summary>
+        public const string FreieLinie = "free line between rooms";
+        public static string WegText(int weg, bool wandFrei) => weg == 5 && wandFrei ? FreieLinie : WegName[Math.Max(0, Math.Min(WegName.Length - 1, weg))];
 
         /// <summary>Welcher Weg bestimmt den Klang? Der mit der kleinsten Teilwertung (NaN = nicht gerechnet).</summary>
         public static int WegWahl(bool propagation, float wirkung, float t, float d, float r, float route, float wand)
@@ -376,6 +406,7 @@ namespace Materialklang
                 F(sb, u, "F1").Append(" (D "); F(sb, e.HoerD[b], "F1").Append(')');
             }
             sb.Append(eins ? " -> -" : " -> silent -"); F(sb, e.HoerDb, "F1").Append(" dB");
+            if (e.HoerKorr != 0f) { sb.Append(" (clip level "); if (e.HoerKorr > 0f) sb.Append('+'); F(sb, e.HoerKorr, "F1").Append(" dB)"); }   // 10.11. (B1)
         }
 
         public static string Uhrzeit(long ticks)
@@ -412,7 +443,7 @@ namespace Materialklang
             sb.Append(" | d="); F(sb, e.Entf, "F1").Append(" m");
             if (!float.IsNaN(e.QX)) { sb.Append(" at ("); F(sb, e.QX, "F1").Append(", "); F(sb, e.QY, "F1").Append(", "); F(sb, e.QZ, "F1").Append(')'); }
             if (!float.IsNaN(e.Dy)) { sb.Append(" dy="); F(sb, e.Dy, "+0.0;-0.0").Append(" m"); }
-            sb.Append(" | path=").Append(WegName[Math.Max(0, Math.Min(WegName.Length - 1, e.Weg))]);
+            sb.Append(" | path=").Append(WegText(e.Weg, e.WandFrei));
             sb.Append(" [T="); F(sb, e.WertT, "F2"); sb.Append(" D="); F(sb, e.WertD, "F2"); sb.Append(" R="); F(sb, e.WertR, "F2");
             if (e.Propagation) { sb.Append(" route="); F(sb, e.WertRoute, "F2"); sb.Append(" wall="); F(sb, e.WertWand, "F2"); }
             sb.Append(" effect="); F(sb, e.Wirkung, "F2"); sb.Append(']');
@@ -422,7 +453,17 @@ namespace Materialklang
                 sb.Append(" | hits:");
                 if (e.StueckAnzahl == 0) sb.Append(" none");
                 for (int i = 0; i < e.StueckAnzahl; i++) Stueck(sb, e.Stuecke[i], i == 0);
-                sb.Append(" (free rays ").Append(e.FreieStrahlen).Append('/').Append(e.Strahlen).Append(')');
+                sb.Append(" (free rays ").Append(e.FreieStrahlen).Append('/').Append(e.Strahlen);
+                if (e.EinseitigeStrahlen + e.ZweiObjektStrahlen + e.DickeStrahlen > 0)
+                {
+                    sb.Append(", no passage: ");
+                    bool erst = true;
+                    if (e.EinseitigeStrahlen > 0) { sb.Append(e.EinseitigeStrahlen).Append(" one-sided hit"); erst = false; }
+                    if (e.ZweiObjektStrahlen > 0) { if (!erst) sb.Append(", "); sb.Append(e.ZweiObjektStrahlen).Append(" two objects"); erst = false; }
+                    if (e.DickeStrahlen > 0) { if (!erst) sb.Append(", "); sb.Append(e.DickeStrahlen).Append(" too thick"); }
+                }
+                sb.Append(')');
+                if (e.KeinStrahlErgebnis) sb.Append(" no valid ray result (T unknown; transmission-only sounds keep the game value)");
             }
             if (e.WandAnzahl > 0)
             {
@@ -437,9 +478,26 @@ namespace Materialklang
             if (e.Physik)
             {
                 sb.Append(" (insulation "); F(sb, e.RohDb, "F1").Append(" dB x loudness "); F(sb, e.Lautheit, "F2");
-                if (!float.IsNaN(e.Knie)) { sb.Append(" up to "); F(sb, e.Knie, "F1").Append(" dB above background, beyond 1:1, gone 10 dB below"); }
+                if (!float.IsNaN(e.KennS)) { sb.Append(", compressed x"); F(sb, e.KennS, "F2").Append(" from game distance curve"); }   // explosionfern
+                if (!float.IsNaN(e.Knie)) { sb.Append(" up to "); F(sb, e.Knie, "F1").Append(" dB above background, beyond 1:1, below it masked (up to 2 dB extra per dB)"); }
                 sb.Append(')');
                 if (e.HoerBand) HoerText(sb, e);
+                // farbekennlinie (12.11.): Neigung des Tiefpasses gestaucht wie die Lautstaerke (nach "hp=", damit die Auswerteskripte
+                // "lp=... Hz hp=... Hz" weiter zusammen finden)
+                if (!float.IsNaN(e.KurveReal4k))
+                {
+                    sb.Append(" lp curve: 4k -"); F(sb, e.KurveReal4k, "F1"); sb.Append("->-"); F(sb, e.KurveSpiel4k, "F1");
+                    sb.Append(" dB (x"); F(sb, e.KurveG, "F2"); sb.Append(" like the volume)");
+                }
+                // blechschuss (17.11.): Fit-Modell und was der 4-polige Spielfilter bei 8 kHz gegenueber dem Bezugsband wegnimmt
+                if (!float.IsNaN(e.Spiel8k) && e.Tiefpass < 21900f)
+                {
+                    sb.Append(e.Spiel24 ? " lp fit 24 dB/oct" : " lp fit 12 dB/oct (game filter 24)");
+                    sb.Append(", 8k -"); F(sb, e.Spiel8k, "F1"); sb.Append(" dB played");
+                }
+                // blechbass (17.11.): Hochpass - was der 4-polige Filter bei 63 Hz wegnimmt (Annahme 4-polig wie der gemessene Tiefpass)
+                sb.Append(e.HpPhysik ? ", hp no bass cut" : ", hp game");
+                sb.Append(", 63 Hz -"); F(sb, (float)(10.0 * Math.Log10(1.0 + Math.Pow(e.Hochpass / 63.0, 8))), "F1"); sb.Append(" dB");
             }
             if (!float.IsNaN(e.FarbeH)) { sb.Append(" timbre dH="); F(sb, e.FarbeH, "F1"); sb.Append(" dL="); F(sb, e.FarbeL, "F1"); sb.Append(" dB"); }
             if (!float.IsNaN(e.LuftHz)) { sb.Append(" air="); F(sb, e.LuftHz, "F0").Append(" Hz"); }
@@ -455,9 +513,20 @@ namespace Materialklang
                     if (e.SebFernDb >= 199f) sb.Append(" | distance boost (SEB silent here)");
                     else { sb.Append(" | distance boost "); Vorz(sb, e.SebFernDb, "F1"); sb.Append(" dB"); }
                 }
+                // nahkennlinie (18.11.): Pegel der Nah-Aufnahme gegenueber der ersten Blendgrenze (SEB: 5 m), ohne Luft
+                if (!float.IsNaN(e.SebNahR) && !float.IsNaN(e.SebNahK))
+                {
+                    sb.Append(" | near re 1st blend limit: 1/r "); Vorz(sb, e.SebNahR, "F1"); sb.Append(" dB, curve "); Vorz(sb, e.SebNahK, "F1");
+                    sb.Append(" dB (diff "); Vorz(sb, e.SebNahK - e.SebNahR, "F1"); sb.Append(" dB)");
+                }
                 if (e.SebFernMitte) sb.Append(" | mid clip kept (no far clip)");
+                string v1 = SchussRichtKern.LogFeld(e.SebV1, e.SebSchleife);   // v1waffen (12.11.)
+                if (v1 != null) sb.Append(v1);
+                string gr = SebGruppeKern.LogFeld(e.SebGruppe);   // occludedmixer (17.11.)
+                if (gr != null) sb.Append(gr);
             }
             if (e.RaumwegText != null && e.Weg == 4) sb.Append(e.RaumwegText);
+            if (e.RichtungText != null && e.Weg == 4) sb.Append(e.RichtungText);
             if (e.WegeText != null) sb.Append(e.WegeText);
             if (e.QuellRaum != null || e.HoererRaum != null)
                 sb.Append(" | rooms src=").Append(e.QuellRaum ?? "-").Append(" ear=").Append(e.HoererRaum ?? "-");
@@ -467,6 +536,38 @@ namespace Materialklang
                 if (e.HallQuelle != null) { sb.Append(" src[").Append(e.HallQuelle).Append(' '); Vorz(sb, e.HallQuelleRt, "F2"); sb.Append(" s, "); Vorz(sb, e.HallQuelleDb, "F1"); sb.Append(" dB]"); }
                 if (e.HallHoerer != null) { sb.Append(" ear[").Append(e.HallHoerer).Append(' '); Vorz(sb, e.HallHoererRt, "F2"); sb.Append(" s, "); Vorz(sb, e.HallHoererDb, "F1"); sb.Append(" dB]"); }
             }
+            // schusshrtf (12.11.): raeumlich (HRTF) oder Stereo-Panning, direkt vor den ids
+            string raum = SchussRaumKern.LogFeld(e.Raeumlich, e.RaeumlichMod);
+            if (raum != null) sb.Append(raum);
+            if (e.MetaOccl != null) sb.Append(e.MetaOccl);   // metaschalter (17.11.)
+            // 10.11.: Instanzen am Zeilenende (bestehende Auswerter lesen die Felder davor unveraendert)
+            if (e.QuellId != 0 || e.OccId != 0 || e.RechnerId != 0)
+            {
+                sb.Append(" | ids src#").Append(e.QuellId).Append(" occ#").Append(e.OccId);
+                if (e.RechnerId != 0) sb.Append(" calc#").Append(e.RechnerId);
+            }
+            // 10.11. (B1): Abstand angewandte - Soll-Lautstaerke (als Daempfung, > 0 = zu leise), ganz am Ende
+            if (!float.IsNaN(e.VolAbstand))
+            {
+                sb.Append(" | vol-gap ");
+                Vorz(sb, e.VolAbstand, "F2");
+                sb.Append(e.VolFrisch ? " dB fresh" : " dB cached");
+            }
+            // galpegel (10.11.): Fremdverstaerkung der Gruppe (anderer Mixer, z.B. Guns Are Loud), ganz am Ende
+            if (e.Fremd != null) sb.Append(" | ext gain ").Append(e.Fremd);
+            // sendsprung (12.11.): Send je QUELLE (die "reverb send"-Angaben davor stehen je Rechner und zeigen im gemerkten Bild den
+            // zuletzt gerechneten Klang des Behaelters), ganz am Ende
+            if (!float.IsNaN(e.SendIst))
+            {
+                sb.Append(" | send now ");
+                Vorz(sb, e.SendIst, "F1");
+                if (!float.IsNaN(e.SendPreset)) { sb.Append(" dB (preset "); Vorz(sb, e.SendPreset, "F1"); sb.Append(')'); }
+                else sb.Append(" dB");
+            }
+            // diffushoerbar (17.11.): trocken gespielter Diffusanteil je Quelle, ganz am Ende
+            if (e.DiffusTrocken != null) sb.Append(e.DiffusTrocken);
+            if (e.Ruhe != null) sb.Append(e.Ruhe);   // diffusflattern (17.11.): Codeweg "gehalten" statt gerechnet
+            if (e.LampePegel != null) sb.Append(e.LampePegel);   // lampenpegel (18.11.): Spielpegel, Soll, Korrektur der Lampe, ganz am Ende
             sb.Append('\n');
         }
 
@@ -494,9 +595,28 @@ namespace Materialklang
     /// Merkt sich je TransmissionCalculator die Treffer der letzten Rechnung in festen Feldern
     /// (wird nur gefuellt, solange das Klang-Log an ist; waechst nur, wenn mehr Strahlen kommen als je zuvor).
     /// </summary>
+    /// <summary>lampenpegel (18.11.): Tuerzustand (EFT.Interactive.EDoorState: None 0, Locked 1, Shut 2, Open 4, Interacting 8, Breaching 16)
+    /// gegen den Zustand des Audio-Portals (BaseSpatialAudioPortal.PortalState: Open 0, Closed 1, InProgressOpen 2, InProgressClose 3),
+    /// Werte aus dem Dekompilat EFT 4.1.6. Offen = Open/Breaching bzw. Open/InProgressOpen, zu = Shut/Locked bzw. Closed/InProgressClose.
+    /// Eine Tuer in Bewegung (Interacting) oder ohne Zustand zaehlt nie als Abweichung.</summary>
+    internal static class TuerZustandKern
+    {
+        /// <summary>1 offen, 0 zu, -1 in Bewegung, -2 unbekannt.</summary>
+        public static int Tuer(int z) => z == 8 ? -1 : (z == 4 || z == 16) ? 1 : (z == 1 || z == 2) ? 0 : -2;
+        /// <summary>1 offen, 0 zu, -2 unbekannt.</summary>
+        public static int Portal(int z) => (z == 0 || z == 2) ? 1 : (z == 1 || z == 3) ? 0 : -2;
+        public static bool WeichtAb(int tuer, int portal) { int t = Tuer(tuer), p = Portal(portal); return t >= 0 && p >= 0 && t != p; }
+        /// <summary>Logfeld hinter dem Portalzustand: " door Shut", " door moving", " door Open (differs from portal)".</summary>
+        public static string Text(int tuer, string tuerName, int portal, string portalName)
+        {
+            if (Tuer(tuer) == -1) return "door moving";
+            return "door " + (tuerName ?? "?") + (WeichtAb(tuer, portal) ? " (differs from portal " + (portalName ?? "?") + ")" : "");
+        }
+    }
+
     internal sealed class TransInfo
     {
-        public int N, Frei, Anzahl;
+        public int N, Frei, Anzahl, Einseitig, ZweiObjekte, ZuDick;
         public int[] Id = new int[64];
         public int[] Gr = new int[64];
         public float[] Dicke = new float[64];
@@ -504,7 +624,7 @@ namespace Materialklang
 
         public void Beginn(int n)
         {
-            N = n; Frei = 0; Anzahl = 0;
+            N = n; Frei = 0; Anzahl = 0; Einseitig = ZweiObjekte = ZuDick = 0;
             if (Id.Length < n)
             {
                 int g = Math.Max(n, Id.Length * 2);
@@ -513,6 +633,8 @@ namespace Materialklang
         }
 
         public void FreierStrahl() { Frei++; }
+        /// <summary>Strahl ohne Durchgang (Vanilla NoPath): 0 = nur eine Seite trifft, 1 = zwei verschiedene Objekte, 2 = zu dick.</summary>
+        public void KeinDurchgang(int art) { if (art == 0) Einseitig++; else if (art == 1) ZweiObjekte++; else ZuDick++; }
 
         public void Treffer(int collider, int gruppe, float dicke, float db)
         {
@@ -526,6 +648,8 @@ namespace Materialklang
         public void Fuellen(LogEintrag e, Func<int, string> name)
         {
             e.Strahlen = N; e.FreieStrahlen = Frei; e.StueckAnzahl = 0;
+            e.EinseitigeStrahlen = Einseitig; e.ZweiObjektStrahlen = ZweiObjekte; e.DickeStrahlen = ZuDick;
+            e.KeinStrahlErgebnis = WegeKern.TOhneErgebnis(Frei, N - Frei - Einseitig - ZweiObjekte, Einseitig, ZweiObjekte);
             int k = Anzahl;
             if (besucht.Length < k) besucht = new bool[Math.Max(k, besucht.Length * 2)];
             Array.Clear(besucht, 0, k);
@@ -556,6 +680,21 @@ namespace Materialklang
     internal static class LogRotation
     {
         /// <summary>Von den vorhandenen Logdateien alle bis auf die neuesten <c>behalten</c> (die neue Datei zaehlt mit).</summary>
+        public const string AusserhalbEndung = "-outside-raid.log";
+
+        /// <summary>Gesamtreview C7: Datei aus einem Raid (nicht Menue/Versteck)?</summary>
+        public static bool RaidDatei(string pfad) => pfad == null || !pfad.EndsWith(AusserhalbEndung, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Gesamtreview C7: nur Dateien derselben Art (Raid / ausserhalb) zaehlen gegeneinander - eine Menue-MARK-Datei
+        /// verdraengt kein Raid-Log mehr. neueDatei = Name der Datei, die gleich angelegt wird (null = Raid).</summary>
+        public static List<string> ZuLoeschen(List<KeyValuePair<string, DateTime>> dateien, int behalten, string neueDatei)
+        {
+            bool raid = RaidDatei(neueDatei);
+            var gleich = new List<KeyValuePair<string, DateTime>>();
+            foreach (var d in dateien) if (RaidDatei(d.Key) == raid) gleich.Add(d);
+            return ZuLoeschen(gleich, behalten);
+        }
+
         public static List<string> ZuLoeschen(List<KeyValuePair<string, DateTime>> dateien, int behalten)
         {
             var sortiert = new List<KeyValuePair<string, DateTime>>(dateien);
@@ -566,11 +705,11 @@ namespace Materialklang
             return weg;
         }
 
-        public static string Dateiname(DateTime jetzt, string karte)
+        public static string Dateiname(DateTime jetzt, string karte, bool raid = true)
         {
             var sb = new StringBuilder();
             foreach (char c in karte ?? "map") sb.Append(char.IsLetterOrDigit(c) || c == '_' || c == '-' ? c : '_');
-            return jetzt.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture) + "-" + sb + ".log";
+            return jetzt.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture) + "-" + sb + (raid ? ".log" : AusserhalbEndung);
         }
     }
 
@@ -680,7 +819,20 @@ namespace Materialklang
                         {
                             if (e.Art == LogArt.Oeffnen) { Schreiben(sb); OeffnenIntern(e); }
                             else if (e.Art == LogArt.Schliessen) { Schreiben(sb); SchliessenIntern(); }
-                            else if (datei != null && !(gedeckelt && e.Art == LogArt.Klang)) ZeilenFormat.Formatieren(sb, e);
+                            else if (datei != null && !(gedeckelt && e.Art == LogArt.Klang))
+                            {
+                                // Gesamtreview C5: Grenze je Eintrag pruefen - bisher fiel beim Erreichen der ganze Stapel weg, auch
+                                // MARK- und [Live]-Zeilen darin. Jetzt: Klangzeile, die nicht mehr passt, weg; alles davor und alle
+                                // Marken/Texte danach werden geschrieben.
+                                int vor = sb.Length;
+                                ZeilenFormat.Formatieren(sb, e);
+                                if (e.Art == LogArt.Klang && !gedeckelt && bytes + sb.Length > grenze)
+                                {
+                                    sb.Length = vor;
+                                    Schreiben(sb);
+                                    Deckeln();
+                                }
+                            }
                         }
                         Schreiben(sb);
                         long vl = Verloren;
@@ -722,7 +874,7 @@ namespace Materialklang
             {
                 var alle = new List<KeyValuePair<string, DateTime>>();
                 foreach (var f in Directory.GetFiles(dir, "*.log")) alle.Add(new KeyValuePair<string, DateTime>(f, File.GetLastWriteTime(f)));
-                foreach (var f in LogRotation.ZuLoeschen(alle, behalten)) { try { File.Delete(f); } catch { } }
+                foreach (var f in LogRotation.ZuLoeschen(alle, behalten, name)) { try { File.Delete(f); } catch { } }
             }
             catch (Exception ex) { Melden("Sound log cleanup: " + ex.Message); }
             string p = Path.Combine(dir, name);
@@ -742,18 +894,20 @@ namespace Materialklang
             sb.Length = 0;
             if (datei == null) return;
             long neu = Encoding.UTF8.GetByteCount(text);
-            if (!gedeckelt && bytes + neu > grenze)
-            {
-                gedeckelt = true;
-                string hinweis = "=== SIZE CAP " + (grenze / (1024 * 1024)) + " MB reached - further sound lines are dropped, MARK and text lines are still written ===\n";
-                datei.Write(hinweis);
-                lock (sperre) bytes += hinweis.Length;
-                // vom Stapel bleiben nur Marken/Texte: die Zeilen stehen schon im Text -> hier einfach ueberspringen
-                return;
-            }
+            // Sicherung (Mehrbyte-Zeichen; die Grenze prueft der Lauf je Eintrag): ueber der Grenze trotzdem schreiben, dann deckeln
             datei.Write(text);
             datei.Flush();
             lock (sperre) bytes += neu;
+            if (!gedeckelt && bytes > grenze) Deckeln();
+        }
+
+        void Deckeln()
+        {
+            if (gedeckelt || datei == null) return;
+            gedeckelt = true;
+            string hinweis = "=== SIZE CAP " + (grenze / (1024 * 1024)) + " MB reached - further sound lines are dropped, MARK and text lines are still written ===\n";
+            datei.Write(hinweis); datei.Flush();
+            lock (sperre) bytes += hinweis.Length;
         }
 
         void SchliessenIntern()

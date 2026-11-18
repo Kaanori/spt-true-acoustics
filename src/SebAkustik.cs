@@ -63,6 +63,7 @@ namespace Materialklang
         public float Faktor = 1f;    // Faktor auf die Entfernung (Ersatz, wenn die Bank keine Entfernungsgrenzen hat)
         public float W, Db;          // Klang-Log: Richtwirkung dieses Schusses (0 = zum Hoerer, 1 = weg) und ihre Lautstaerke in dB
         public bool Innen;           // Schuss faellt in einem Innenraum (kein Wald)
+        public bool Nah;             // nahclip: Nah-Aufnahme auf jede Entfernung -> Luft ueber die volle Strecke, Tiefpass-Fit auf ISO 9613-1
     }
 
     internal static class Farbe
@@ -77,7 +78,8 @@ namespace Materialklang
 
         // 0.8.3: im Physik-Modus aus - ComputeNach wendet die Klangfarbe dort nie an (der Tiefpass traegt die Neigung schon);
         // bis 0.8.2 wurde sie trotzdem je Strahl gerechnet ("timbre 316 calculations, applied 0x").
-        public static bool Aktiv => Bereit && AktivCfg.Value && Staerke.Value > 0f && !Physik.An;
+        // Gesamtreview B4: Hauptschalter aus = Vanilla (Physik.An ist dann false - ohne Plugin.Aktiv wuerde die Klangfarbe AN gehen)
+        public static bool Aktiv => Bereit && Plugin.Aktiv.Value && AktivCfg.Value && Staerke.Value > 0f && !Physik.An;
 
         static readonly ConditionalWeakTable<TransmissionCalculator, Klangfarbe> Tabelle =
             new ConditionalWeakTable<TransmissionCalculator, Klangfarbe>();
@@ -138,6 +140,7 @@ namespace Materialklang
             Kontext.dH = Kontext.dL = 0f;
             Kontext.WaldDa = false; Kontext.VolGeaendert = false;
             WaldVor(__instance, source);
+            SchussV1.AnwendenVor(__instance, source);   // v1waffen: Richtwirkung der SEB-V1-Schuesse als Pegel (wie die Laubdaempfung)
             if (!Aktiv) return;
             try { FarbeBerechnen(__instance); }
             catch (Exception ex) { Statistik.Fehler(ex); }
@@ -172,6 +175,7 @@ namespace Materialklang
 
         static Exception KontextEnde(Exception __exception)
         {
+            SchussV1.AnwendenNach(Kontext.Quelle);   // v1waffen: welchen Pegel traegt die Quelle jetzt (vor dem Zuruecksetzen der Rechenwerte)
             if (Kontext.VolGeaendert)
             {
                 // die Lautstaerke wurde nur fuer diesen Aufruf abgesenkt (die Quelle hat sie schon); die Rechenwerte bleiben wie vom Spiel
@@ -190,7 +194,7 @@ namespace Materialklang
         {
             try
             {
-                if (!Wald.Bereit || !Wald.Aktiv.Value) return;
+                if (!Plugin.Aktiv.Value || !Wald.Bereit || !Wald.Aktiv.Value) return;   // Gesamtreview B4
                 // nur im Freien: Quelle und Hoerer beide in Innenraeumen -> kein Wald dazwischen
                 var qr = occ.SourceContainer != null ? occ.SourceContainer.CurrentAudioRoom : null;
                 var hr = occ.AudioSystem != null ? occ.AudioSystem.ListenerCurrentRoom : null;
@@ -198,8 +202,9 @@ namespace Materialklang
                 var ba = MonoBehaviourSingleton<BetterAudio>.Instance;
                 var lt = ba != null ? ba.ListenerTransform : null;
                 if (lt == null) return;
-                Vector3 h = lt.position, p = q.Position;
+                Vector3 h = lt.position, p = Richtung.Echt(q);
                 float dl = SebAkustik.LuftAktiv.Value ? Vector3.Distance(p, h) : 0f;
+                if (dl > 0f) SchussV1.LuftMeterAnpassen(q, ref dl);   // v1waffen: wie beim Live-Weg ohne die eingebackene Luft der Fernaufnahme
                 if (!Wald.Berechnen(q.GetInstanceID(), p, h, dl, out var r)) return;
                 Kontext.WaldE = r; Kontext.WaldDa = true;
                 if (r.Db > 0.01f)
@@ -280,11 +285,19 @@ namespace Materialklang
             }
         }
 
+        /// <summary>nahclip: Luft-Tiefpass fuer eine Nah-Aufnahme ueber d (m): 4-poliger Fit auf ISO 9613-1 (NahclipKern.LuftFit, Raid-Wetter),
+        /// mal Klarheitsfaktor (wie Luft.Grenzfrequenz), 1-22 kHz. Der Anteil bei 1 kHz steckt in der Lautstaerke (Kurve, NahclipKern.Gain).</summary>
+        internal static float NahLuftLp(float d)
+        {
+            float fc = FernschussSeb.NahLuft.Hole(Mathf.Max(d, 0.5f)) * SebAkustik.Feuchte.Value;
+            return Mathf.Clamp(fc, (float)NahclipKern.LpMin, (float)NahclipKern.LpMax);
+        }
+
         // Postfix FilterCutoffCalculator.Compute: Klangfarbe + Luftdaempfung auf die vom Spiel berechneten Grenzfrequenzen.
         static void ComputeNach(float occlusion, ref float lowPassFreq, ref float highPassFreq)
         {
             var q = Kontext.Quelle;
-            if (q == null) return;
+            if (q == null || !Plugin.Aktiv.Value) return;   // Gesamtreview B4: Hauptschalter aus -> kein Luft-/Wald-/Farbe-Filter
             try
             {
                 float lp = lowPassFreq, hp = highPassFreq;
@@ -297,10 +310,16 @@ namespace Materialklang
                     SebAkustik.FarbeSummeH += Math.Abs(Kontext.dH);
                     SebAkustik.FarbeSummeL += Math.Abs(Kontext.dL);
                 }
+                float luftV1 = float.NaN;
                 if (SebAkustik.LuftOk && SebAkustik.LuftAktiv.Value && !SebAkustik.IstSebQuelle(q))
                 {
                     float d = Entfernung(q);
-                    float fc = Luft.Grenzfrequenz(d);
+                    // v1waffen: SEB-V1-Schuss -> Luft erst ab der letzten Entfernungsgrenze seiner Bank (wie der Live-Weg, SebTeil.BlendRechnen);
+                    // bis paket-1112i lief hier die volle Entfernung ("air game") zusaetzlich zur eingebackenen Luft der Fernaufnahme
+                    bool v1 = SchussV1.LuftMeterAnpassen(q, ref d);
+                    // nahclip: V1-Sample mit Nah-Aufnahme -> 4-poliger Fit auf die ISO-Kurve (Abzug ist dort 0, LuftMeterAnpassen)
+                    float fc = v1 && SchussV1.NahQuelle(q) ? NahLuftLp(d) : Luft.Grenzfrequenz(d);
+                    if (v1) luftV1 = fc;
                     if (KlangLog.An) KlangLog.LuftHz = fc;
                     if (fc < lp)
                     {
@@ -315,6 +334,8 @@ namespace Materialklang
                     lp = Kontext.WaldE.LpHz;
                     if (hp > lp) hp = lp;
                 }
+                // v1waffen: Richtwirkung (Tiefpass) der SEB-V1-Schuesse - dieselbe Min-Bildung wie SebTeil.BlendRechnen auf dem Live-Weg
+                SchussV1.TiefpassNach(q, ref lp, ref hp, luftV1, Kontext.WaldDa ? Kontext.WaldE.Meter : float.NaN, Kontext.WaldDa ? Kontext.WaldE.LpHz : float.NaN);
                 lowPassFreq = lp;
                 highPassFreq = hp;
             }
@@ -326,7 +347,7 @@ namespace Materialklang
             var ba = MonoBehaviourSingleton<BetterAudio>.Instance;
             var lt = ba != null ? ba.ListenerTransform : null;
             if (lt == null) return 0f;
-            return Vector3.Distance(q.Position, lt.position);
+            return Vector3.Distance(Richtung.Echt(q), lt.position);
         }
     }
 
@@ -377,6 +398,14 @@ namespace Materialklang
         internal static float RichtW;
         internal static SchussInfo Aktuell = new SchussInfo();
 
+        // 0.8.6 Kennlinie (Hoerbarkeit.KennPegel): Schalldaempfer je Quelle - der Muendungsknall ist rund 20 dB leiser und faellt damit
+        // frueher unter das Knie. Gesetzt in PrepareShot (SebTeil.Vorbereiten), gelesen in Physik.LautstaerkeKern. Bekannte Grenze: ein
+        // Pool-Schuss traegt bis zu seinem PrepareShot den Wert des vorigen Schusses (wie die Position, siehe Auftrag 10.11.).
+        sealed class Merker { public bool Gedaempft; }
+        static readonly ConditionalWeakTable<BetterSource, Merker> gedaempftTab = new ConditionalWeakTable<BetterSource, Merker>();
+        internal static void GedaempftSetzen(BetterSource q, bool g) { if (q != null) gedaempftTab.GetValue(q, _ => new Merker()).Gedaempft = g; }
+        internal static bool Gedaempft(BetterSource q) => q != null && gedaempftTab.TryGetValue(q, out var m) && m.Gedaempft;
+
         // Diagnose
         internal static int FarbeRechnungen, FarbeAngewandt, LuftAndere, RichtSchuesse, SebLuft;
         internal static double FarbeSummeH, FarbeSummeL, LuftAndereSummeFc, RichtSummeW, RichtSummeDb, SebLuftSummeFc;
@@ -402,6 +431,8 @@ namespace Materialklang
                 new ConfigDescription("High-frequency limit when the weapon fires exactly away from you (22000 = no change).", new AcceptableValueRange<float>(1000f, 22000f)));
             InnenFaktor = c.Bind(s7, "Indoor factor", 0.5f,
                 new ConfigDescription("Indoors the direction matters less (walls throw the sound back). 1 = as outdoors, 0 = no directivity indoors.", new AcceptableValueRange<float>(0f, 1f)));
+            SchussV1.Binden(c, s7);   // v1waffen (12.11.): dieselben Schussteile fuer SEBs V1-Weg
+            SebGruppe.Binden(c, s7);  // occludedmixer (17.11.): verdeckte Schuesse nicht zusaetzlich ueber Guns/Occluded
 
             const string s8 = "8. Air Absorption";
             LuftAktiv = c.Bind(s8, "Enabled", true,
@@ -485,7 +516,7 @@ namespace Materialklang
             Version v = Chainloader.PluginInfos.TryGetValue("red.soundenginebackport", out var pi) ? pi.Metadata.Version : null;
             if (!SebSchutz.VersionPasst(v))
             {
-                Plugin.Log.LogWarning($"SEB add-on: Sound Engine Backport {v} found, Materialklang is built for 1.0.x -> weapon directivity and gunshot air absorption off (shots play as SEB intends).");
+                Plugin.Log.LogWarning($"SEB add-on: Sound Engine Backport {v} found, Materialklang is built for 1.0.x/1.1.x -> weapon directivity and gunshot air absorption off (shots play as SEB intends).");
                 return;
             }
             var fire = Ziel(AccessTools.TypeByName("SoundEngineBackport.LiveEngine.LiveWeaponSoundEngine"), "FireBullet");
@@ -507,6 +538,9 @@ namespace Materialklang
             }
             if (RichtOk)
                 h.Patch(fire, prefix: HM(typeof(SebTeil), "FeuerVor"), finalizer: HM(typeof(SebTeil), "FeuerEnde"));
+            // occludedmixer (17.11.): Gruppenwahl je Schuss (eigener Haken, unabhaengig von Richtwirkung/Luft)
+            try { SebGruppe.Anwenden(h); }
+            catch (Exception ex) { Statistik.Fehler(ex); Plugin.Log.LogWarning($"SEB add-on: mixer group hook failed ({ex.Message}) - occluded shots keep SEB's mixer group."); }
         }
 
         internal static void SetzePruefer(Func<BetterSource, bool> f) => sebPruefer = f;
@@ -514,8 +548,10 @@ namespace Materialklang
         // ---- Diagnose: eine Zeile alle 30 s, wenn etwas passiert ist ----
         internal static void Loggen()
         {
-            if (FarbeRechnungen + FarbeAngewandt + LuftAndere + RichtSchuesse + SebLuft == 0) return;
+            string gruppe = SebGruppe.Diagnose();   // occludedmixer (17.11.)
+            if (FarbeRechnungen + FarbeAngewandt + LuftAndere + RichtSchuesse + SebLuft == 0 && gruppe == null) return;
             var teile = new System.Collections.Generic.List<string>();
+            if (gruppe != null) teile.Add(gruppe);
             if (FarbeRechnungen + FarbeAngewandt > 0)
                 teile.Add($"timbre {FarbeRechnungen} calculations, applied {FarbeAngewandt}x" +
                           (FarbeAngewandt > 0 ? $" (mean |dH| {FarbeSummeH / FarbeAngewandt:F1} dB, |dL| {FarbeSummeL / FarbeAngewandt:F1} dB)" : ""));
@@ -545,6 +581,7 @@ namespace Materialklang
             public float W, Db;
             public bool Innen;
             public bool Gedaempft;
+            public bool Nah;   // nahclip
         }
 
         static readonly ConditionalWeakTable<SEB.FilterBlend, BlendInfo> Tabelle =
@@ -576,12 +613,8 @@ namespace Materialklang
                 var lt = ba != null ? ba.ListenerTransform : null;
                 if (lt == null) return;
                 Vector3 zumOhr = lt.position - shotPosition;
-                float w = 0f;   // 0 = Muendung zeigt zum Hoerer, 1 = genau weg
-                if (zumOhr.sqrMagnitude > 1e-6f && shotDirection.sqrMagnitude > 1e-6f)
-                {
-                    float dot = Vector3.Dot(shotDirection.normalized, zumOhr.normalized);
-                    w = Mathf.Clamp01((1f - dot) * 0.5f);
-                }
+                // v1waffen: gemeinsamer Kern mit dem V1-Weg (SchussRichtKern.W; 0 = Muendung zeigt zum Hoerer, 1 = genau weg)
+                float w = SchussRichtKern.W(shotDirection.x, shotDirection.y, shotDirection.z, zumOhr.x, zumOhr.y, zumOhr.z);
                 SebAkustik.RichtW = w;
                 SebAkustik.RichtGueltig = true;
             }
@@ -620,7 +653,7 @@ namespace Materialklang
         static void SchussVor(ref SEB.ShotPlaybackContext context)
         {
             var info = SebAkustik.Aktuell = new SchussInfo();
-            if (Gestoert) return;
+            if (Gestoert || !Plugin.Aktiv.Value) return;   // Gesamtreview B4: Hauptschalter aus -> Schuss wie SEB
             try { SchussRechnen(ref context, info); }
             catch (Exception ex) { if (SebSchutz.Strukturfehler(ex)) info.Gueltig = false; Fehler("shot preparation", ex); }
         }
@@ -637,11 +670,12 @@ namespace Materialklang
                 if (SebAkustik.RichtOk && SebAkustik.RichtAktiv.Value && SebAkustik.RichtGueltig)
                 {
                     float w = SebAkustik.RichtW;
-                    float innen = context.Environment == EnvironmentType.Indoor ? SebAkustik.InnenFaktor.Value : 1f;
+                    float innen = SchussRichtKern.Gewicht(context.Environment == EnvironmentType.Indoor, SebAkustik.InnenFaktor.Value);
                     // Richtwirkung des Muendungsknalls ist gemessen (Beck, Nakasone & Marr, JASA 129, 1748-1759, 2011),
                     // die Kurve (w^1.3, -4 dB, 6 kHz, Innenfaktor) ist aber nach Gehoer eingestellt, nicht daraus abgeleitet.
-                    float db = SebAkustik.RueckDb.Value * Mathf.Pow(w, 1.3f) * innen;
-                    info.DirLp = 22000f * Mathf.Pow(SebAkustik.RueckLpf.Value / 22000f, w * w * innen);
+                    // v1waffen: dieselbe Rechnung wie auf dem V1-Weg (SchussRichtKern)
+                    float db = SchussRichtKern.Db(w, SebAkustik.RueckDb.Value, innen);
+                    info.DirLp = SchussRichtKern.Lp(w, SebAkustik.RueckLpf.Value, innen);
                     if (db < -0.01f)
                     {
                         context = new SEB.ShotPlaybackContext(
@@ -656,20 +690,12 @@ namespace Materialklang
                 }
 
                 // Luftdaempfung: die Fernaufnahmen der Bank enthalten die Luft bis zur letzten Entfernungsgrenze schon.
+                // v1waffen: dieselbe Rechnung wie auf dem V1-Weg (SchussRichtKern.LuftVersatz; ohne Grenzen halbe Entfernung)
                 var opt = context.Bank != null ? context.Bank.BlendOptions : null;
-                float[] werte = opt != null ? opt.Values : null;
-                if (werte != null && werte.Length > 0)
-                {
-                    float letzte = 0f;
-                    for (int i = 0; i < werte.Length; i++) letzte = Mathf.Max(letzte, werte[i]);
-                    info.Abzug = letzte * SebAkustik.SchussAbzug.Value;
-                    info.Faktor = 1f;
-                }
-                else
-                {
-                    info.Abzug = 0f;
-                    info.Faktor = 0.5f;   // keine Grenzen bekannt: halbe Entfernung als Naeherung
-                }
+                SchussRichtKern.LuftVersatz(opt != null ? opt.Values : null, SebAkustik.SchussAbzug.Value, out info.Abzug, out info.Faktor);
+                // nahclip: die Nah-Aufnahme traegt keine Luft der Strecke -> volle Entfernung
+                info.Nah = Fernschuss.NahGilt(context.Bank, (int)context.Environment, context.IsFirstPerson);
+                if (info.Nah) { info.Abzug = 0f; info.Faktor = 1f; }
             }
         }
 
@@ -703,6 +729,7 @@ namespace Materialklang
                     info.W = a.W; info.Db = a.Db;
                     info.Innen = a.Innen;
                     info.Gedaempft = a.Gedaempft;
+                    info.Nah = a.Nah;
                 }
                 else
                 {
@@ -712,14 +739,16 @@ namespace Materialklang
                     info.W = 0f; info.Db = 0f;
                     info.Innen = false;
                     info.Gedaempft = false;
+                    info.Nah = false;
                 }
+                SebAkustik.GedaempftSetzen(info.Quelle, info.Gedaempft);   // 0.8.6 Kennlinie
             }
         }
 
         // Postfix FilterBlend.Compute(): FilterTargets
         static void BlendNach(SEB.FilterBlend __instance, ref SEB.FilterTargets __result)
         {
-            if (Gestoert) return;
+            if (Gestoert || !Plugin.Aktiv.Value) return;   // Gesamtreview B4
             try { BlendRechnen(__instance, ref __result); }
             catch (Exception ex) { Fehler("filter blend", ex); }
         }
@@ -735,8 +764,8 @@ namespace Materialklang
                 if (SebAkustik.RichtOk && SebAkustik.RichtAktiv.Value && info.DirLp < neu) neu = info.DirLp;
                 if (SebAkustik.SebLuftOk && SebAkustik.LuftAktiv.Value)
                 {
-                    float d = Mathf.Max(0f, Farbe.Entfernung(info.Quelle) * info.Faktor - info.Abzug);
-                    float fc = Luft.Grenzfrequenz(d);
+                    float d = SchussRichtKern.LuftMeter(Farbe.Entfernung(info.Quelle), info.Faktor, info.Abzug);
+                    float fc = info.Nah ? Farbe.NahLuftLp(d) : Luft.Grenzfrequenz(d);   // nahclip
                     luftHz = fc;
                     if (fc < neu)
                     {
@@ -752,8 +781,8 @@ namespace Materialklang
                     var lt = ba != null ? ba.ListenerTransform : null;
                     if (lt != null)
                     {
-                        Vector3 p = info.Quelle.Position, h = lt.position;
-                        float dl = SebAkustik.SebLuftOk && SebAkustik.LuftAktiv.Value ? Mathf.Max(0f, Vector3.Distance(p, h) * info.Faktor - info.Abzug) : 0f;
+                        Vector3 p = Richtung.Echt(info.Quelle), h = lt.position;
+                        float dl = SebAkustik.SebLuftOk && SebAkustik.LuftAktiv.Value ? SchussRichtKern.LuftMeter(Vector3.Distance(p, h), info.Faktor, info.Abzug) : 0f;
                         if (Wald.Berechnen(info.Quelle.GetInstanceID() ^ 0x40000000, p, h, dl, out var wr))
                         {
                             waldM = wr.Meter; waldHz = wr.LpHz;
@@ -764,6 +793,8 @@ namespace Materialklang
                 if (neu < alt)
                 {
                     __result.LowPass = neu;
+                    // Absicht (Gesamtreview geprueft): unser Tiefpass ist Daempfung (Luft/Richtwirkung/Laub), keine Resonanz - Q 1 ist
+                    // SEBs eigener neutraler Wert (FilterBlend.Compute ohne Ziele); die Q 1,5-1,8 der Kopf-Faerbung gehoeren zu SEBs Grenzfrequenz.
                     __result.LowPassQ = 1f;
                     if (__result.HighPass > neu) __result.HighPass = neu;
                 }

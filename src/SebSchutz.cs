@@ -8,8 +8,11 @@ namespace Materialklang
     // MissingFieldException - bis 0.8.2 VOR dem try im Prefix von TryStartShot, der Schuss blieb stumm.
     internal static class SebSchutz
     {
-        /// <summary>Gebaut und geprueft gegen SEB 1.0.x (1.0.3). Andere Fassungen: SEB-Teile aus.</summary>
-        public static bool VersionPasst(Version v) => v != null && v.Major == 1 && v.Minor == 0;
+        /// <summary>Gebaut und geprueft gegen SEB 1.0.x (1.0.3) und 1.1.x (12.11.2026: 1.1.0 per Dekompilat-Vergleich mit 1.0.4 - alle gepatchten und
+        /// gelesenen Typen/Methoden/Felder identisch, nur Ambient-Regler neu; Build gegen 1.1.0 fehlerfrei; v1waffen 12.11.: 1.1.1 per Vergleich mit 1.1.0 -
+        /// nur WeaponSoundPlayerPatches (IsLegacyBank(bank, player)/BankShape: mehr Waffen auf dem V1-Weg) und LegacyLoopCuts (Log) geaendert, kein
+        /// von der Mod genutzter Name; die V1-Abdeckung (SchussV1.cs) nutzt nur Spielmethoden). Andere Fassungen: SEB-Teile aus.</summary>
+        public static bool VersionPasst(Version v) => v != null && v.Major == 1 && (v.Minor == 0 || v.Minor == 1);
 
         /// <summary>Fehler, die eine geaenderte SEB-Fassung bedeuten (fehlendes Feld/Konstruktor/Typ) -> SEB-Teile abschalten.
         /// Alles andere (z. B. NullReference) wird nur gezaehlt.</summary>

@@ -51,11 +51,43 @@ namespace Materialklang
             return Math.Min(r, rMl);                                                               // nie ueber dem Massengesetz
         }
 
+        /// <summary>10.11. (akustik-wand, Befund 7): Gesamtverlustfaktor eines Bauteils nach EN ISO 12354-1:2000 Anhang C, Gl. (C.1)
+        /// (Laborsituation, Bauteil mit Stossstellen zu schweren Nachbarbauteilen): eta = eta_int + m''/(485 sqrt f). Fuer Beton 150 mm
+        /// bei 250 Hz 0,055 statt fest 0,1; Rw von Beton 100/150/200/300 mm damit 46/51/56/62 dB (EN 12354-1 Anh. B, 37,5 lg m'' - 42:
+        /// 46,6/53,2/57,9/64,5 dB; mit 0,1 waren es 50/54/57/62).</summary>
+        public static double VerlustEn(double etaInnen, double m, double f) => etaInnen + m / (485.0 * Math.Sqrt(Math.Max(f, 1.0)));
+
+        /// <summary>
+        /// 10.11. (akustik-wand, Befund 6): zwei getrennte Schalen (Daemmung ra/rb, Flaechenmasse ma/mb in kg/m2) mit Luftabstand d (m).
+        /// Bis 10.11. galt immer ra + rb - fuer leichte Schalen mit kleinem Abstand zu viel: unterhalb der Masse-Luft-Masse-Resonanz
+        /// f0 = 1/(2 pi) sqrt(rho0 c0^2 (1/ma + 1/mb)/d) (~ 60 sqrt((1/ma + 1/mb)/d), Bies, Hansen & Howard Kap. 7.2.6) schwingen beide
+        /// als EINE Masse; darueber steigt R nach Sharp (1978) mit R_a + R_b + 20 lg(2 k d) bis f_l = c/(2 pi d), dort R_a + R_b + 6.
+        /// Hier: R = min(R_a + R_b, max(ML(ma + mb), R_a + R_b + 20 lg(2 k d))). Annahmen: der Resonanzeinbruch bei f0 ist nicht
+        /// nachgebildet (stetig in Abstand und Masse statt eines Sprungs), und ohne Daemmstoff im Zwischenraum (leere Hohlraeume des
+        /// Spiels) gibt es Sharps +6 dB ueber f_l nicht - R bleibt dort ra + rb wie bisher. Beispiel 2 x 12 mm Holz (6 kg/m2), 50 mm Luft:
+        /// f0 = 155 Hz, 250 Hz: 26,2 statt 33,0 dB. Grosse Abstaende (Raum dazwischen): 2kd >= 1 -> ra + rb wie bisher.
+        /// </summary>
+        public static double Doppelschale(double ra, double rb, double ma, double mb, double d, double f)
+        {
+            double summe = ra + rb;
+            if (!(ma > 0) || !(mb > 0) || !(d > 0) || !(f > 0)) return summe;
+            double kd2 = 4 * Math.PI * f * d / C0;
+            double sharp = summe + 20 * Math.Log10(kd2);
+            double eine = Math.Max(0, Massengesetz(ma + mb, f));
+            return Math.Min(summe, Math.Max(eine, sharp));
+        }
+
+        /// <summary>Innerer Verlustfaktor von Beton/Mauerwerk: 0,01 (EN 12354-1 Anhang C, ueblicher Wert fuer Stein; Cremer/Heckl: Beton 0,004-0,008,
+        /// Ziegel 0,01-0,02).</summary>
+        public const double EtaInnenStein = 0.01;
+
         // 0.8.3: Dicke einer EINZELNEN Flaeche (Mesh ohne Rueckseite, nur eine Seite getroffen) je Materialgruppe, in m.
         // Bis 0.8.2 galt fuer jede Gruppe die "Shell thickness" (0,15 m): ein Plakat (Kunststoff), ein Autoblech oder eine
         // Glasscheibe zaehlten wie 15 cm Wand (34-41 dB). Einseitige Flaechen sind im Spiel fast immer duenne Teile; nur bei
         // massiven Gruppen (Beton/Stein, Erde, Kies, Wasser, Schnee, Unbekannt) steht die Flaeche fuer eine Wandschale.
-        // Werte = uebliche Bauteildicken, ANNAHMEN (keine Messung): Stahlwand Container 6-10 mm, Karosserie-/Trapezblech
+        // 10.11. (akustik-wand, Befund 7): "Metal thick" sind laut Klang-Log (Factory) Zisternen, Abscheider, Reaktor, Tore, Pfeiler -
+        // Behaelterblech 6-20 mm (Druckbehaelter EN 13445) -> 10 mm bleibt; die ISO-Container stehen im Spiel unter "Metal thin" (2 mm).
+        // Werte = uebliche Bauteildicken, ANNAHMEN (keine Messung): Stahlwand Behaelter 6-10 mm, Karosserie-/Trapezblech
         // 0,7-2 mm, Brett/Sperrholz 12 mm, Bohle 40 mm, Floatglas 4-6 mm (EN 572-2), Folie/Plakat/Pappe ~5 mm,
         // Innentuerblatt 40 mm (DIN 18101). NaN = die Einstellung "Shell thickness". Reihenfolge wie enum Gruppe.
         static readonly float[] EinzelTab =
@@ -105,5 +137,9 @@ namespace Materialklang
             float t = g >= 0 && g < EinzelTab.Length ? EinzelTab[g] : float.NaN;
             return float.IsNaN(t) ? schale : Math.Min(t, schale);
         }
+
+        /// <summary>Gesamtreview B2: Daemmung fuer Bots im Physik-Modus (dB) = reale Daemmung (bis Max. insulation) x "Strength"
+        /// des Bot-Hoerens. Der Loudness factor (Lautheit der Spieler-Ohren) gehoert nicht hinein.</summary>
+        internal static float BotDb(float realDb, float dyn, float staerke) => Math.Min(realDb, dyn) * Math.Max(0f, staerke);
     }
 }

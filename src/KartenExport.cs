@@ -120,9 +120,11 @@ namespace Materialklang
             bool ok = false;
             IEnumerator innen = null;
             ScanAuftrag scan = null;
+            GameWorld welt = null; int szene = 0;
             try
             {
                 var gw = Singleton<GameWorld>.Instance;
+                welt = gw; szene = SceneManager.GetActiveScene().handle;   // Gesamtreview C8: Raid, in dem der Export begann
                 pos = gw.MainPlayer.Position;
                 karte = !string.IsNullOrEmpty(gw.LocationId) ? gw.LocationId : SceneManager.GetActiveScene().name;
                 boden = pos.y;
@@ -150,6 +152,14 @@ namespace Materialklang
             while (true)
             {
                 bool weiter;
+                // Gesamtreview C8: Raid zu Ende / Szene gewechselt -> abbrechen (vorher NRE, halbe Datei und trotzdem Erfolgston)
+                if (welt == null || !Singleton<GameWorld>.Instantiated || !ReferenceEquals(Singleton<GameWorld>.Instance, welt) || welt.MainPlayer == null
+                    || SceneManager.GetActiveScene().handle != szene)
+                {
+                    Plugin.Log.LogWarning("Map export aborted: the raid ended (or the scene changed) while scanning - no file written.");
+                    z = null;
+                    break;
+                }
                 try { weiter = innen.MoveNext(); }
                 catch (Exception e) { Plugin.Log.LogError("Map export failed: " + e); weiter = false; z = null; }
                 if (!weiter) break;
@@ -654,7 +664,7 @@ namespace Materialklang
             return true;
         }
 
-        /// <summary>Material des Tuerblatts: groesster BallisticCollider (wie TuerenFenster.TuerWert), sonst nach Namen, sonst "Door".</summary>
+        /// <summary>Material des Tuerblatts: groesster BallisticCollider (wie TuerenFenster.TuerInfo), sonst nach Namen, sonst "Door".</summary>
         static string TuerBlatt(Door d)
         {
             EFT.Ballistics.BallisticCollider best = null; float gr = -1f;

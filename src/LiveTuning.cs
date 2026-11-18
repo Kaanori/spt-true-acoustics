@@ -48,11 +48,16 @@ namespace Materialklang
         /// <summary>Wirken nur beim Start (Haken werden einmal gesetzt bzw. Puffer beim Raidstart angelegt).</summary>
         public static readonly HashSet<string> NurNeustart = new HashSet<string>(StringComparer.Ordinal)
         {
+            // Gesamtreview C6: "10. Advanced (rays)" wirkt ab dem naechsten Raid (wie in F12 beschrieben) - der Wert darf live gesetzt
+            // werden. Nur der Haken des Bot-Hoerens wird einmal beim Spielstart gesetzt.
             "3. Bot Hearing (SAIN)/Mode",
-            "10. Advanced (rays)/Transmission rays x",
-            "10. Advanced (rays)/Reflection rays x",
-            "10. Advanced (rays)/Max. bounces",
-            "10. Advanced (rays)/Energy kept per bounce",
+        };
+
+        /// <summary>Gesamtreview C6: Ausloeser (setzen sich selbst zurueck) - aus der Live-Datei nie uebernommen, sonst loeste z. B.
+        /// "Export map for sandbox": true bei jedem Spielstart einen Export aus.</summary>
+        public static readonly HashSet<string> NieLive = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "11. Sound log & live tuning/Export map for sandbox",
         };
 
         public const string DateiName = "kaan.materialklang.live.json";
@@ -169,6 +174,11 @@ namespace Materialklang
                 return false;
             }
             string voll = sek + "/" + key;
+            if (NieLive.Contains(voll))
+            {
+                WarnEinmal("trigger:" + voll, "[Live] '" + voll + "' is a one-shot trigger - use F12 for it; ignored in the live file.");
+                return false;
+            }
             if (!beimSpielstart && NurNeustart.Contains(voll))
             {
                 WarnEinmal("restart:" + voll + "=" + e.Roh, "[Live] '" + voll + "' only takes effect after a game/raid restart - ignored now (it is applied when the game starts).");

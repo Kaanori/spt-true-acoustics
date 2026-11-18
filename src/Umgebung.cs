@@ -192,19 +192,20 @@ namespace Materialklang
             }
             var alt = e.Alt;
             Func<double, double> f = x => alt.Evaluate((float)x);
-            var kk = UmgebungKern.Bauen(f, e.MaxAlt, maxNeu, TrimDb.Value, out double r0);
+            var pegelArt = QuellPegelKern.AusKlasse(k, e.Namen);   // 0.8.6: Pegel fuer Hoerbarkeit + Abstandsgesetz
+            var kk = FesteQuellen.KurveBauen(f, e.MaxAlt, maxNeu, TrimDb.Value, pegelArt, e.S, out var bez);
             var keys = new Keyframe[kk.Length];
             for (int i = 0; i < kk.Length; i++) keys[i] = new Keyframe(kk[i].T, kk[i].V, kk[i].In, kk[i].Out);
             e.Neu = new AnimationCurve(keys);
-            e.MaxNeu = (float)maxNeu; e.R0 = (float)r0; e.Klasse = k;
+            e.MaxNeu = (float)maxNeu; e.R0 = (float)bez.Ref; e.Klasse = k;
             e.S.rolloffMode = AudioRolloffMode.Custom;
             e.S.SetCustomCurve(AudioSourceCurveType.CustomRolloff, e.Neu);
             e.S.maxDistance = e.MaxNeu;
             e.Umgestellt = true;
-            m.An = true; m.Klasse = k; m.MaxNeu = e.MaxNeu; m.R0 = e.R0; m.Neu = e.Neu; m.Klang = e.S.clip != null ? e.S.clip.name : null;
+            m.An = true; m.Klasse = k; m.MaxNeu = e.MaxNeu; m.R0 = e.R0; m.Neu = e.Neu; m.Klang = e.S.clip != null ? e.S.clip.name : null; m.Bez = bez; m.Pegel = pegelArt;
             m.AltF = x => x >= 1.0 ? 0.0 : alt.Evaluate((float)x);
             FesteQuellen.Melden(e.P.GetInstanceID(), m);
-            WandDaempfung.Melden(e.S, true, "ambient", e.Name);   // 0.8.5: keine Okklusion im Spiel -> eigene Wanddaempfung
+            WandDaempfung.Melden(e.S, true, "ambient", e.Name, pegel: pegelArt, bezug: FesteQuellen.KalBezug(bez));   // 0.8.5 (0.8.6: Pegel): keine Okklusion im Spiel -> eigene Wanddaempfung
         }
 
         // ---- aus Plugin.Update: Zusammenfassung ins BepInEx-Log, Zeilen ins Klang-Log (gedrosselt) ----
@@ -238,7 +239,7 @@ namespace Materialklang
                     var inv = CultureInfo.InvariantCulture;
                     KlangLog.Text("[Ambient] " + e.Name + " (" + (e.Typ == "AmbientSoundPlayer" ? "Random" : e.Typ.Replace("AmbientSoundPlayer", "")) + ", " + QuellRegelKern.Name(e.Klasse) + ") clip=" + (e.S.clip != null ? e.S.clip.name : "-") +
                                   " | d=" + d.ToString("F1", inv) + " m | range " + e.MaxAlt.ToString("0.#", inv) + " -> " + e.MaxNeu.ToString("0.#", inv) +
-                                  " m, r0 " + e.R0.ToString("F1", inv) + " m | level " + Db(neu, inv) + " (game " + (alt <= 1e-6 ? "silent" : Db(alt, inv)) + ")");
+                                  " m, ref " + e.R0.ToString("F1", inv) + " m | level " + Db(neu, inv) + " (game " + (alt <= 1e-6 ? "silent" : Db(alt, inv)) + ")");
                 }
             }
             catch (Exception ex) { Fehler(ex); }

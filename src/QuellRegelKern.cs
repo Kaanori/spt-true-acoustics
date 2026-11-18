@@ -14,7 +14,8 @@ namespace Materialklang
     //   Ambient  = BaseAmbientSoundPlayer (Abschnitt 15, ohne Okklusion),
     //   Occluded = SourceOccluder -> SimpleSource im Okklusionssystem (Abschnitt 16, mit Waenden/Raeumen/Luft von True Acoustics),
     //   Plain    = rohe Szenen-AudioSource ohne steuerndes Skript (neu, ohne Okklusion: Feuer, Fackeln, Generator Streets ...).
-    // Regel fuer alle drei: bis r0 die Spielkurve, danach 1/r, Reichweite = alt x Faktor, gedeckelt nach Klasse, weicher Auslauf
+    // Regel fuer alle drei: bis zum Bezugsabstand die Spielkurve (0.8.6, UmgebungKern.Bezugsabstand; bis dahin r0), danach das
+    // Abstandsgesetz der Quellart (1/r bzw. Flaeche), Reichweite = alt x Faktor, gedeckelt nach Klasse, weicher Auslauf
     // (UmgebungKern.Bauen). Klasse aus dem Namen von Quelle/Eltern/Grosseltern/Clip:
     //   Laut   (Signale, Abschnitt 16-Stichwoerter)            Faktor 15, hoechstens 300 m
     //   Mittel (Maschinen, Generatoren, Turbinen, Grossfeuer)  Faktor 4,  hoechstens 80 m
@@ -130,6 +131,39 @@ namespace Materialklang
         /// dann bei 2 m Bewegung oder alle 10 s.</summary>
         public static bool FahrzeugZeile(double d, double dLetzt, double sekSeit, double reichweite)
             => d <= reichweite * 1.25 && (dLetzt < 0 || Math.Abs(d - dLetzt) >= 2.0 || sekSeit >= 10.0);
+
+        /// <summary>0.8.6: wie oben, zusaetzlich sofort, wenn sich der Zustand der Quelle geaendert hat (spielt / spielt nicht / aus).</summary>
+        public static bool FahrzeugZeile(double d, double dLetzt, double sekSeit, double reichweite, bool zustandNeu)
+            => d <= reichweite * 1.25 && (zustandNeu || dLetzt < 0 || Math.Abs(d - dLetzt) >= 2.0 || sekSeit >= 10.0);
+
+        /// <summary>Zustand einer Fahrzeugquelle fuer die [Vehicle]-Zeile (0 spielt, 1 aus: Objekt inaktiv, 2 aus: Quelle abgeschaltet, 3 steht).</summary>
+        public static int FahrzeugZustand(bool objektAktiv, bool quelleAn, bool spielt)
+            => !objektAktiv ? 1 : !quelleAn ? 2 : spielt ? 0 : 3;
+
+        public static string ZustandText(int z)
+            => z == 0 ? "playing" : z == 1 ? "NOT PLAYING - object inactive (V-Ex gone / not present)" : z == 2 ? "NOT PLAYING - source disabled (game culling: beyond range)"
+             : "NOT PLAYING - stopped (active, enabled, but no sound)";
+
+        // ---- 0.8.6: stumme Leerlauf-Schleifen (Meldung Ground Zero 09.11.2026 04:04, MARK 2 am V-Ex-Taxi) ----
+        // Ursache (EFT 4.1.6, Assembly-CSharp; Szenen level505/509/514; Logs 09.11.), behoben in CullingFix/CullingKern:
+        //  1. LocalGame ruft beim Raidstart AudioUtils.ResetAudioBuffer -> AudioSettings.Reset; das haelt die Quellen an,
+        //     playOnAwake-Schleifen starten nicht von selbst neu.
+        //  2. AudioSourceCulling.Work() beginnt jedes Bild am Listenende (num2 = Count - 1) und bearbeitet hoechstens 10
+        //     Eintraege - nur die LETZTEN 10 angemeldeten Quellen werden je geschaltet (CullingKern.VomSpielErreicht).
+        //  3. Ground Zero laedt Design_Main (V-Ex-Taxi, 1 Schleife) vor Sandbox_Sound (12 Feuer): das Taxi ist Eintrag 13 von
+        //     hinten -> nie geschaltet -> stumm, auch ohne Mod. Customs: Taxi drittletzter -> geschaltet -> hoerbar (Kaans Messung
+        //     09.11. 00:38: stumm ab 20,9 m = Abschaltabstand sqrt(20^2 + 25) = 20,6 m).
+        // Der fruehere Neustart-Umweg (NeustartTick) ist entfernt; geblieben ist nur die Diagnose, ob eine Schleife trotzdem stumm ist.
+
+        /// <summary>Diagnose: so lange (s) muss eine Schleife in Reichweite stumm sein, bevor sie gemeldet wird (das Culling
+        /// erreicht jede Quelle spaetestens alle 0,5 s).</summary>
+        public const float StummFrist = 2f;
+
+        /// <summary>Diagnose fuer eine Quelle, deren Objekt aktiv ist und die nicht spielt (prueft der Aufrufer vorher):
+        /// Dauerschleife (playOnAwake + loop + Clip) in Reichweite, die kein Skript bewusst abgeschaltet hat
+        /// (CullingFix.SkriptAus: ToggleAudioSourceByEvent, Radio stumm, Lok ausgeblendet) -> verbleibender Fehler.</summary>
+        public static bool SchleifeStumm(bool playOnAwake, bool loop, bool hatClip, bool vomSkriptAus, double d, double reichweite)
+            => playOnAwake && loop && hatClip && !vomSkriptAus && d >= 0 && d <= reichweite;
 
         /// <summary>Okklusions-Takt: ferne Quellen (jenseits der alten Reichweite) hoechstens jede (fern+1). Runde, sonst wie im Spiel.</summary>
         public static int Takt(int basis, double abstandQ, double altQ, int fern)
