@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace Materialklang
 {
-    /// <summary>0.8.6: Pegelart einer Quelle ohne Okklusion im Spiel (Abschnitte 15/17/18 + Wanddaempfung).</summary>
+    /// <summary>0.8.8: Pegelart einer Quelle ohne Okklusion im Spiel (Abschnitte 15/17/18 + Wanddaempfung).</summary>
     internal enum PegelArt
     {
         Unbekannt = -1,
         PkwLeerlauf = 0, BtrMotor, BtrTurm, BtrHorn, LokFahrt, LokLeerlauf, Flugzeug, Fackel, Pfeifen, Tor,
         Lagerfeuer, Grossfeuer, Generator, Maschine, Tropfen, Klein, Alarm,
-        Maschinenhalle   // 0.8.6 Abstandskurve: mehrere Aggregate in einem Raum (Labs "sound_generators_loop_stereo")
+        Maschinenhalle   // 0.8.8 Abstandskurve: mehrere Aggregate in einem Raum (Labs "sound_generators_loop_stereo")
     }
 
-    /// <summary>0.8.6 Abstandskurve: Abmessungen einer Quellart fuer das Abstandsgesetz (QuellPegelKern.Gesetz).
+    /// <summary>0.8.8 Abstandskurve: Abmessungen einer Quellart fuer das Abstandsgesetz (QuellPegelKern.Gesetz).
     /// Nah = kleinster Abstand Ohr - akustischer Mittelpunkt (Karosserie, Gehaeuse, Flammen; naeher kommt man nicht heran),
     /// A x B = abstrahlende Flaeche (A &lt;= B, m); 0 x 0 = Punktquelle. Bekannt = false: Quellart unbekannt.</summary>
     internal struct QuellMass
@@ -27,7 +27,7 @@ namespace Materialklang
     }
 
     // ---------------------------------------------------------------------------------------------
-    //  0.8.6 - Hoerbarkeit der Quellen OHNE Okklusion im Spiel (Meldung Streets 09.11.2026 18:46 MARK 1: V-Ex-Taxi 135 m entfernt
+    //  0.8.8 - Hoerbarkeit der Quellen OHNE Okklusion im Spiel (Meldung Streets 09.11.2026 18:46 MARK 1: V-Ex-Taxi 135 m entfernt
     //  "gut hoerbar"; 18:53 BTR 364 m zwischen Haeuserschluchten hoerbar).
     //
     //  Ursache: Occluder-Quellen (Schritte, Ausruestung, Stimme ...) werden seit 0.8.5 je Band gegen das Grundgeraeusch geprueft
@@ -42,16 +42,16 @@ namespace Materialklang
     //    frei_b  = P_b(1 m) - 20 lg d - Luft_b(d) - N_b       (Pegel ohne Wand ueber dem Grundgeraeusch; Luft ISO 9613-1, 20 C/70 %/101,325 kPa)
     //    D_b     = reale Daemmung Wand + Raumweg/Abschirmung (WandDaempfungKern.SummeWege/Summe, schon je Band)
     //    unter_b = D_b - frei_b                                 (dB unter dem Grundgeraeusch hinter der Wand; ueber_b = 10 - unter_b)
-    //    Zusatz_b = (1 - Lautheit) * max(0, D_b - max(0, frei_b)) + Hoerbarkeit.Verdeckung(unter_b)   (0.8.6: stetig, hoechstens 2 dB je dB,
-    //               bis 0.8.6-dev "Max. insulation * smoothstep(unter_b / 10 dB)" = 60 dB auf 10 dB, siehe RaumwegKern.cs)
+    //    Zusatz_b = (1 - Lautheit) * max(0, D_b - max(0, frei_b)) + Hoerbarkeit.Verdeckung(unter_b)   (0.8.8: stetig, hoechstens 2 dB je dB,
+    //               bis 0.8.8-dev "Max. insulation * smoothstep(unter_b / 10 dB)" = 60 dB auf 10 dB, siehe RaumwegKern.cs)
     //    G_b     = Lautheit * D_0 + max(0, D_b - D_0) + Zusatz_b,   Lautstaerke = min G_b, Tiefpass = Hoerbarkeit.Tiefpass
-    //              (0.8.6 Kennlinie: Lautheit * K(L_frei) - K(L_frei - D_0) statt Lautheit * D_0, L_frei = realer dB(A)-Pegel ohne Wand;
+    //              (0.8.8 Kennlinie: Lautheit * K(L_frei) - K(L_frei - D_0) statt Lautheit * D_0, L_frei = realer dB(A)-Pegel ohne Wand;
     //               unter dem Knie dasselbe - laut sind hier BTR, Lok, Flugzeug, Horn, Alarm)
     //  Ist frei_b >= 0, ist das genau die Formel der Occluder-Quellen (Hoerbarkeit.Daempfung). Neu ist nur, dass die Verdeckung
     //  auch ohne Wand greift (frei_b < 0): die Occluder-Quellen enden mit der Reichweite des Spiels, bevor sie unter das
     //  Grundgeraeusch fallen; diese Quellen tragen durch Abschnitt 15/17/18 bis 2000 m und fallen dort real darunter.
     //
-    //  Keine doppelte Zaehlung: die Entfernung daempft weiter NUR die Kurve (0.8.6: Spielkurve bis zum Bezugsabstand, dann das
+    //  Keine doppelte Zaehlung: die Entfernung daempft weiter NUR die Kurve (0.8.8: Spielkurve bis zum Bezugsabstand, dann das
     //  Abstandsgesetz der Quellart, siehe UmgebungKern.Bezugsabstand). 20 lg d steckt hier
     //  allein in der Entscheidung, wo die Quelle gegen den Hintergrund steht (wie bei den Occluder-Quellen, deren Spielkurve
     //  ebenfalls die Entfernung macht). Zusatz_b ist keine zweite Entfernungsdaempfung: bei Lautheit 1 ist er 0, solange das Band
@@ -64,7 +64,7 @@ namespace Materialklang
     //
     //  PEGEL JE QUELLART (dB(A) in 1 m, Freifeld; Spektrum 250 Hz / 1 kHz / 4 kHz relativ, Schaetzung nach typischem Verlauf):
     //   Art              dB(A)@1m  Spektrum         Quelle / Herleitung
-    //   PKW-Leerlauf       62      0 / -5 / -12     NHTSA 2012: 56 dB(A) in 2 m (SAE J2889-1), Median 17 Fahrzeuge (0.8.6 Gutachten; vorher 68)
+    //   PKW-Leerlauf       62      0 / -5 / -12     NHTSA 2012: 56 dB(A) in 2 m (SAE J2889-1), Median 17 Fahrzeuge (0.8.8 Gutachten; vorher 68)
     //   BTR-Motor/Ketten  107      0 / -4 / -12     BTR-80-Diesel ~90 dB(A) in 7,5 m (+17,5 dB auf 1 m; Lkw-Diesel 85-90 dB(A) in 7,5 m, ISO 362)
     //   BTR-Turm           80     -4 /  0 /  -6     Elektro-/Hydraulik-Stellmotor ~75-85 dB(A) in 1 m (Annahme)
     //   BTR-Lufthorn      117     -3 /  0 /  -5     Druckluft-Horn 105-118 dB(A) in 2 m (Mitte 111 + 6 dB auf 1 m)
@@ -74,33 +74,33 @@ namespace Materialklang
     //   Signalfackel       70    -10 / -3 /   0     Strassenfackel-Zischen 65-75 dB(A) in 1 m (Annahme, 0.8.5 SkriptQuellenKern)
     //   Moerser-Pfeifen    90    -10 /  0 /  -2     Pfeifen 70-90 dB am Flugweg (Annahme, obere Grenze, da Abstand unbekannt)
     //   Ausgangs-Tor       85     -2 /  0 /  -4     Metalltor/Rolltor ~80-90 dB(A) in 1 m (Annahme)
-    //   Lagerfeuer         60     -4 /  0 /  -3     Knistern eines Lager-/Kaminfeuers ~55-65 dB(A) in 1 m (Annahme; 0.8.6: auch "fireplace")
-    //   Grossfeuer         60     -2 /  0 /  -4     Restbrand am Wrack wie ein grosses Lagerfeuer (0.8.6 Gutachten: 80 -> 70 -> 60; siehe unten)
+    //   Lagerfeuer         60     -4 /  0 /  -3     Knistern eines Lager-/Kaminfeuers ~55-65 dB(A) in 1 m (Annahme; 0.8.8: auch "fireplace")
+    //   Grossfeuer         60     -2 /  0 /  -4     Restbrand am Wrack wie ein grosses Lagerfeuer (0.8.8 Gutachten: 80 -> 70 -> 60; siehe unten)
     //   Generator          85      0 / -3 / -10     Baustellen-Stromerzeuger 65-75 dB(A) in 7 m (Herstellerangaben, 2000/14/EG) + 17 dB
     //   Maschine           80      0 / -2 /  -8     Pumpen, Turbinen, Kompressoren, Motoren (Annahme, unter dem Generator)
     //   Tropfen            45    -15 / -5 /   0     Wassertropfen auf hartem Boden ~40-50 dB(A) in 1 m (Annahme)
     //   klein (Brummen)    50      0 / -3 / -10     Netzbrummen, Leuchtstoffroehren, Fliegen, Server 40-55 dB(A) (Annahme)
     //   Alarm/Signal      100     -6 /  0 /  -3     Alarmgeber 65-120 dB(A) in 1 m nach EN 54-3, typisch ~100 dB(A)
-    //   Maschinenhalle     85      0 / -3 / -10     mehrere Aggregate (wie Generator), Flaeche 6 x 12 m (0.8.6)
+    //   Maschinenhalle     85      0 / -3 / -10     mehrere Aggregate (wie Generator), Flaeche 6 x 12 m (0.8.8)
     //  Unbekannt -> keine Hoerbarkeitsrechnung (Verhalten wie 0.8.5).
     // ---------------------------------------------------------------------------------------------
     internal static class QuellPegelKern
     {
-        // 0.8.6 Kalibrierung (Kaan 09.11.2026): PKW-Leerlauf 75 -> 68 dB(A) in 1 m. Standgeraeusch-Messungen nach ISO 5130 / UN R51
+        // 0.8.8 Kalibrierung (Kaan 09.11.2026): PKW-Leerlauf 75 -> 68 dB(A) in 1 m. Standgeraeusch-Messungen nach ISO 5130 / UN R51
         // (0,5 m hinter dem Auspuff, erhoehte Drehzahl) liegen bei 70-80 dB(A); im Leerlauf und rundum in 1 m eher 62-72 dB(A)
         // (Benziner-SUV ~65, Diesel ~70) - Mitte 68.
-        // 0.8.6 (Meldung Streets 09.11.2026 23:50 "Feuer etwas zu laut"): Grossfeuer 80 -> 70 dB(A) in 1 m. Fuer das Geraeusch
+        // 0.8.8 (Meldung Streets 09.11.2026 23:50 "Feuer etwas zu laut"): Grossfeuer 80 -> 70 dB(A) in 1 m. Fuer das Geraeusch
         // brennender Gegenstaende gibt es kaum Messungen (Abbasi/Wilson/Ezekoye, ASA-Tagungsbeitrag JASA 136 (4), 2014, doi 10.1121/1.4899840:
         // "few acoustic measurements have been made"; Quelle ist die Pyrolyse des Materials). 80 dB(A) in 1 m waere so laut wie
         // ein Rasenmaeher daneben; ein Fahrzeugbrand ohne Explosionen faucht und knistert eher wie ein grosses Lagerfeuer plus
         // Flammenrauschen (~65-75 dB(A)) - Mitte 70, 10 dB ueber dem Lagerfeuer (60). Kein Messwert, Annahme.
-        // 0.8.6 Gutachten Kalibrierung (10.11.2026): PKW-Leerlauf 68 -> 62 dB(A) in 1 m. NHTSA 2012 (Docket NHTSA-2011-0148), Tabelle 29:
+        // 0.8.8 Gutachten Kalibrierung (10.11.2026): PKW-Leerlauf 68 -> 62 dB(A) in 1 m. NHTSA 2012 (Docket NHTSA-2011-0148), Tabelle 29:
         // stehend, Motor an, Mikrofon nach SAE J2889-1 (2 m neben der Fahrzeugmitte, 1,2 m hoch) 50,7-63,1 dB(A), Median 56 dB(A),
         // 17 Fahrzeuge; Tabelle 1: 45,1-48,5 dB(A) in 12 ft (3,7 m). 56 dB(A) in 2 m = 62 dB(A) Punktquellen-Pegel in 1 m.
         // Grossfeuer 70 -> 60 dB(A): die Flammen an den Wracks (Streets, Ground Zero) sind kleine Restbraende; das Spiel spielt sie
         // umgerechnet mit 59 dB(A) in 1 m (wie ein Lagerfeuer, Tabelle 60). Fuer 70 gibt es keinen Beleg (Abbasi et al. 2014:
         // "few acoustic measurements").
-        // Maschinenhalle (neu, 0.8.6 Abstandskurve) wie ein Generator 85 dB(A) als Punktquellen-Pegel in 1 m; die Flaeche (QuellMass)
+        // Maschinenhalle (neu, 0.8.8 Abstandskurve) wie ein Generator 85 dB(A) als Punktquellen-Pegel in 1 m; die Flaeche (QuellMass)
         // macht das Nahfeld flacher.
         public static readonly double[] Pegel = { 62, 107, 80, 117, 126, 100, 140, 70, 90, 85, 60, 60, 85, 80, 45, 50, 100, 85 };
 
@@ -121,7 +121,7 @@ namespace Materialklang
         };
 
         // ---------------------------------------------------------------------------------------------
-        //  0.8.6 Abstandskurve (Gutachten Kalibrierung, Abschnitt 3 Schritt 2): Abmessungen je Quellart.
+        //  0.8.8 Abstandskurve (Gutachten Kalibrierung, Abschnitt 3 Schritt 2): Abmessungen je Quellart.
         //  Abstandsgesetz einer rechteckigen Flaechenquelle a x b (a <= b) nach Rathe (J. Sound Vib. 10 (1969) 472; VDI 3770):
         //    d < a/pi        flach (0 dB je Verdopplung),
         //    a/pi < d < b/pi -3 dB je Verdopplung (Linienquelle),
@@ -212,10 +212,10 @@ namespace Materialklang
 
         public const string FeuerListe = "fire, flame, burn, bonfire, campfire";
         public const string GrossfeuerListe = "fire_car, car_fire, house_fire, big_fire, large_fire";
-        public const string KaminListe = "fireplace, campfire, bonfire, stove, furnace";   // 0.8.6: amb_fireplace ist kein Grossfeuer
+        public const string KaminListe = "fireplace, campfire, bonfire, stove, furnace";   // 0.8.8: amb_fireplace ist kein Grossfeuer
         public const string GeneratorListe = "generator, genset, diesel";
         public const string TropfenListe = "drip, drop, leak, water_drop";
-        public const string HallenListe = "generators";   // 0.8.6: mehrere Aggregate (Labs "sound_generators_loop_stereo", Clip amb_generators_loop)
+        public const string HallenListe = "generators";   // 0.8.8: mehrere Aggregate (Labs "sound_generators_loop_stereo", Clip amb_generators_loop)
 
         static readonly string[] feuer = Liste(FeuerListe), gross = Liste(GrossfeuerListe), kamin = Liste(KaminListe), gen = Liste(GeneratorListe), tropf = Liste(TropfenListe),
             halle = Liste(HallenListe);
@@ -252,7 +252,7 @@ namespace Materialklang
 
         static readonly double[] luftTmp = new double[Hoerbarkeit.NB], luftA = new double[Hoerbarkeit.NB];
 
-        /// <summary>0.8.6 Kennlinie: realer Pegel dB(A) am Hoerer ohne Hindernis = A-bewertete Summe der drei Bandpegel nach Abstandsgesetz
+        /// <summary>0.8.8 Kennlinie: realer Pegel dB(A) am Hoerer ohne Hindernis = A-bewertete Summe der drei Bandpegel nach Abstandsgesetz
         /// der Quellart und Luft (in 1 m ohne Luft genau die Tabelle). NaN = Pegelart unbekannt.</summary>
         public static double FreiPegelA(PegelArt art, double abstand, double pegelVersatz = 0)
         {
@@ -263,7 +263,7 @@ namespace Materialklang
             return 10 * Math.Log10(e);
         }
 
-        /// <summary>0.8.6 Kennlinie: Daemmung (dB) im gespielten Mass ohne Bandrechnung ("hearing" aus): lautheit x Kompression; Pegelart
+        /// <summary>0.8.8 Kennlinie: Daemmung (dB) im gespielten Mass ohne Bandrechnung ("hearing" aus): lautheit x Kompression; Pegelart
         /// unbekannt: d x lautheit wie bisher.</summary>
         public static double Gestaucht(PegelArt art, double abstand, double d, double lautheit, double kennKnie, double kennSteigung)
         {
@@ -284,9 +284,9 @@ namespace Materialklang
             r.Gilt = true;
             var n = Hoerbarkeit.Grund(lGrund);
             Luft(abstand, luftTmp);
-            double ab = -GesetzDb(Mass(art), abstand);   // 0.8.6 Abstandskurve: Nahfeld/Flaeche der Quellart (Punktquelle: 20 lg max(d, Nah))
+            double ab = -GesetzDb(Mass(art), abstand);   // 0.8.8 Abstandskurve: Nahfeld/Flaeche der Quellart (Punktquelle: 20 lg max(d, Nah))
             double d0 = Math.Max(0, dReal[0]);
-            // 0.8.6 Kennlinie (RaumwegKern.cs, Hoerbarkeit.Kennlinie): Bezugsband-Abzug im gespielten Mass aus dem realen Pegel am Hoerer
+            // 0.8.8 Kennlinie (RaumwegKern.cs, Hoerbarkeit.Kennlinie): Bezugsband-Abzug im gespielten Mass aus dem realen Pegel am Hoerer
             double a0 = lautheit * Hoerbarkeit.Kompression(FreiPegelA(art, abstand, pegelVersatz), d0, kennKnie, kennSteigung);
             r.Lautstaerke = double.MaxValue; r.ZusatzMax = 0;
             for (int b = 0; b < Hoerbarkeit.NB; b++)
@@ -297,7 +297,7 @@ namespace Materialklang
                 double unter = db - frei;
                 r.D[b] = db; r.Knie[b] = knie;
                 r.Ueber[b] = Hoerbarkeit.MaskBreite - unter;
-                r.Zusatz[b] = (1 - lautheit) * Math.Max(0, db - knie) + Hoerbarkeit.Verdeckung(unter, maxDb);   // 0.8.6: ohne 60-dB-Klippe
+                r.Zusatz[b] = (1 - lautheit) * Math.Max(0, db - knie) + Hoerbarkeit.Verdeckung(unter, maxDb);   // 0.8.8: ohne 60-dB-Klippe
                 r.G[b] = a0 + (b == 0 ? 0 : Math.Max(0, db - d0)) + r.Zusatz[b];
                 if (r.G[b] < r.Lautstaerke) r.Lautstaerke = r.G[b];
                 if (b > 0 && r.Zusatz[b] > r.ZusatzMax) r.ZusatzMax = r.Zusatz[b];

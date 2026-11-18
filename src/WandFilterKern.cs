@@ -16,9 +16,9 @@ namespace Materialklang
     {
         public const float FcOffen = 20000f;
         public const int MaxKanaele = 8;
-        /// <summary>0.8.6: kleinster Faktor (-60 dB = 60 dB Wand x Lautheit 1,0, das Hoechste der Rechnung). Der Filter darf nie stumm schalten.</summary>
+        /// <summary>0.8.8: kleinster Faktor (-60 dB = 60 dB Wand x Lautheit 1,0, das Hoechste der Rechnung). Der Filter darf nie stumm schalten.</summary>
         public const float MinGain = 0.001f;
-        public const float MaxGain = 1.4126f;   // 0.8.6 Kalibrierung: hoechstens +3 dB (KalibrierKern.MaxAnheben; bis 0.8.6-dev +15 dB)
+        public const float MaxGain = 1.4126f;   // 0.8.8 Kalibrierung: hoechstens +3 dB (KalibrierKern.MaxAnheben; bis 0.8.8-dev +15 dB)
 
         // vom Hauptfaden gesetzt
         public volatile float ZielGain = 1f, ZielFc = 22000f, Tau = 0.1f;
@@ -43,7 +43,7 @@ namespace Materialklang
             if (n <= 0) return;
             float fs = Fs > 1000f ? Fs : 48000f;
             float zg = ZielGain, zf = ZielFc;
-            // 0.8.6: ungueltige Ziele = Durchlass, nie unter MinGain (kein Stummschalten), Zustand ohne NaN/Inf
+            // 0.8.8: ungueltige Ziele = Durchlass, nie unter MinGain (kein Stummschalten), Zustand ohne NaN/Inf
             if (!(zg >= 0f) || float.IsInfinity(zg)) zg = 1f; if (zg > MaxGain) zg = MaxGain; if (zg < MinGain) zg = MinGain;
             if (!(zf > 0f) || float.IsInfinity(zf)) zf = 22000f;
             if (!(g >= MinGain) || g > MaxGain) g = 1f;
@@ -93,7 +93,7 @@ namespace Materialklang
                     data[i] = x * gs;
                 }
             }
-            // Denormale vermeiden (Abklingen des Filters in Stille); 0.8.6: NaN/Inf im Speicher (kaputter Eingang) -> leeren statt
+            // Denormale vermeiden (Abklingen des Filters in Stille); 0.8.8: NaN/Inf im Speicher (kaputter Eingang) -> leeren statt
             // die Quelle fuer immer stumm/kaputt zu halten
             for (int c = 0; c < ch; c++)
             {

@@ -22,7 +22,7 @@ namespace Materialklang
     // alle Einfallswinkel, schraeger Einfall erhoeht R nie (Cremer/Heckl; Bies, Hansen & Howard Kap. 7). Bis 10.11. zaehlte die Strahllaenge
     // durch das Material: 15 cm Beton unter 45 Grad wie 21 cm (+4,6 dB bei 250 Hz), unter 60 Grad wie 30 cm (+9,1 dB). Die Wegsuche rechnet
     // schon so (Dicke x |cos|, Untergrenze 0,05, Schallweg/SwSuche.cs).
-    internal struct WandTreffer { public float T; public int Id; public float Y, Ny; public float Cos; }   // T = Abstand vom Linienanfang A (m), auch fuer den Gegenstrahl; 0.8.6: Hoehe und Normale (y) des Treffers
+    internal struct WandTreffer { public float T; public int Id; public float Y, Ny; public float Cos; }   // T = Abstand vom Linienanfang A (m), auch fuer den Gegenstrahl; 0.8.8: Hoehe und Normale (y) des Treffers
     internal struct WandStueck { public int Id; public float Dicke; public bool Einzeln; public float Start; public float Cos; }   // Start = Abstand von A (m), 0.8.4; Dicke = Strahllaenge
     // 0.8.4: Lage eines Wandstuecks auf der Linie (A..B in m ab Linienanfang; Einzelflaeche: A = B = Trefferpunkt) und Ergebnis-Schicht.
     internal struct WandLage { public float A, B; public bool Einzeln; public int G; public int Id; public float Cos; }

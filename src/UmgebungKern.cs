@@ -9,12 +9,12 @@ namespace Materialklang
     // Neue Kurve (gilt fuer alle umgestellten Quellen der Abschnitte 15-18):
     //  - bis zum Bezugsabstand r_ref exakt die Spielkurve (an der Quelle gleich laut),
     //  - danach die Pegel-Linie c * G(d) mit dem Abstandsgesetz G der Quellart (QuellPegelKern.Gesetz: Punktquelle 1/r,
-    //    Flaechen-/Linienquelle mit Nahfeld nach Rathe), hoechstens so laut wie die Kurve bis 0.8.6-dev (Herleitung unten),
+    //    Flaechen-/Linienquelle mit Nahfeld nach Rathe), hoechstens so laut wie die Kurve bis 0.8.8-dev (Herleitung unten),
     //  - neue Reichweite = MaxDistance * Faktor (hoechstens Obergrenze, nie kuerzer als vorher),
     //  - weiches Ausblenden (cos^2) auf den letzten 25 % der neuen Reichweite statt Abschneiden.
     // Luftdaempfung (ISO 9613-1) bleibt weg: bis 30 m unter 0,2 dB bei 1 kHz.
     //
-    // 0.8.6 ABSTANDSKURVE (Gutachten Kalibrierung 10.11.2026, Hauptfehler): bis 0.8.6-dev war r_ref = r0 = "erste Entfernung, ab der
+    // 0.8.8 ABSTANDSKURVE (Gutachten Kalibrierung 10.11.2026, Hauptfehler): bis 0.8.8-dev war r_ref = r0 = "erste Entfernung, ab der
     // die Spielkurve steiler faellt als 1/r". Fuer eine lineare Kurve min -> max ist das IMMER max/2 (Steigung in log-log -d/(max-d)),
     // egal wo sie zu fallen beginnt: V-Ex-Taxi linear 2 -> 20 m -> r0 = 10 m, Generator Streets linear 1 -> 12 m -> r0 = 6 m, BTR
     // r0 = 42,7 m. Bis r0 blieb die (fast flache) Spielkurve, der ganze Umkreis klang wie aus naechster Naehe (Taxi in 3,7 m -0,9 dB,
@@ -31,12 +31,12 @@ namespace Materialklang
     //            Laute Quellen (Alarm 100, BTR 107, Generator 85 dB(A) in 1 m) kann das Spiel nahe der Quelle nicht so laut spielen
     //            (Vollaussteuerung): ihr flaches oder langsam fallendes Spielplateau ist Kompression. Liegt c_abs mehr als 3 dB ueber
     //            c_rel, gilt die echte Linie - die Kurve folgt dann dem Spiel, bis dessen Pegel unter den echten faellt.
-    //   Neue Kurve: bis r_ref die Spielkurve, danach min(Kurve bis 0.8.6-dev, c * G(d)) mit c = max(c_rel, c_abs) - nirgends lauter
-    //            als bis 0.8.6-dev, an der Quelle gleich laut, stetig und fallend.
+    //   Neue Kurve: bis r_ref die Spielkurve, danach min(Kurve bis 0.8.8-dev, c * G(d)) mit c = max(c_rel, c_abs) - nirgends lauter
+    //            als bis 0.8.8-dev, an der Quelle gleich laut, stetig und fallend.
     //   Pegel unbekannt (Clip-Pegel erst beim Abspielen, Skriptquellen, Ambient-Spieler): bei Quellarten, die lauter sein koennen,
     //            als das Spiel typisch spielt (Tabelle am Mindestabstand + K ueber KlipGrenze), c_abs = unendlich (Kurve wie bis
-    //            0.8.6-dev); leise Arten (Tropfen, Brummen, Lagerfeuer, PKW) nur relativ. Quellart und Pegel unbekannt (Tueren,
-    //            Landung, Leuchtpatrone): wie bis 0.8.6-dev - ihr Nahbereich bleibt SEBs Mischung wie bei Schritten und Stimmen.
+    //            0.8.8-dev); leise Arten (Tropfen, Brummen, Lagerfeuer, PKW) nur relativ. Quellart und Pegel unbekannt (Tueren,
+    //            Landung, Leuchtpatrone): wie bis 0.8.8-dev - ihr Nahbereich bleibt SEBs Mischung wie bei Schritten und Stimmen.
     internal static class UmgebungKern
     {
         public const double KnieSteigung = -0.05;     // dln g / dln d: 0,3 dB je Verdopplung = noch flach
@@ -44,7 +44,7 @@ namespace Materialklang
         public const int ProOktave = 32;              // Abtastung der Spielkurve je Verdopplung (geometrisch; linear verpasste Knie)
         /// <summary>dBFS(A): typischer gespielter Nahpegel einer Schleife (Taxi suv_idle x 0,536 = -41,6, Wrackfeuer -41,1 LAeq).
         /// Ist der Clip-Pegel unbekannt und liegt die Quellart real darueber (Tabelle am Mindestabstand + K), kann ihr Spielplateau
-        /// Kompression sein - dann bleibt die Kurve wie bis 0.8.6-dev.</summary>
+        /// Kompression sein - dann bleibt die Kurve wie bis 0.8.8-dev.</summary>
         public const double KlipGrenze = -40.0;
         public const double AbsolutSchwelle = 3.0;   // dB: c_abs gilt erst ab 3 dB ueber c_rel (wie die Kalibrierschwelle)
 
@@ -54,7 +54,7 @@ namespace Materialklang
             public double Ref, Knie, R0Alt, Komp;
             public double CRel, CAbs, C;   // Pegel-Linie c * G(d): relativ (Spiel an r_ref), absolut (echter Pegel), benutzt
             public bool Absolut;           // echte Linie gilt (Kompression) - die Kalibrierung laesst diese Quelle aus
-            public bool WieBisher;         // Pegel unbekannt, laute Art: Kurve wie bis 0.8.6-dev
+            public bool WieBisher;         // Pegel unbekannt, laute Art: Kurve wie bis 0.8.8-dev
             public QuellMass M;
             public string Grund;           // "curve knee", "source size", "1 m minimum", "old r0" + Linie
         }
@@ -67,7 +67,7 @@ namespace Materialklang
         public static double NeueReichweite(double alt, double faktor, double grenze = Obergrenze)
             => Math.Max(alt, Math.Min(alt * Math.Max(1.0, faktor), grenze));
 
-        /// <summary>Alte Regel (bis 0.8.6-dev, nur noch Obergrenze und Vergleich): erste Entfernung, ab der die Spielkurve steiler
+        /// <summary>Alte Regel (bis 0.8.8-dev, nur noch Obergrenze und Vergleich): erste Entfernung, ab der die Spielkurve steiler
         /// faellt als 1/r. alt(x) = Spielkurve mit x = d / maxAlt.</summary>
         public static double Bezugsradius(Func<double, double> alt, double maxAlt) => ErsteSteigung(alt, maxAlt, -1.0);
 
@@ -117,7 +117,7 @@ namespace Materialklang
             return b;
         }
 
-        /// <summary>0.8.6 Bezugsabstand und Pegel-Linie (Herleitung oben). ueberDb = Tabelle(1 m) + K - Pegel des Clips in 1 m (dB,
+        /// <summary>0.8.8 Bezugsabstand und Pegel-Linie (Herleitung oben). ueberDb = Tabelle(1 m) + K - Pegel des Clips in 1 m (dB,
         /// NaN = unbekannt), tabelleDbA = Tabellenpegel der Quellart (NaN = unbekannt), k = Bezug K.</summary>
         public static Bezug Bezugsabstand(Func<double, double> alt, double maxAlt, QuellMass m, double ueberDb, double tabelleDbA = double.NaN, double k = double.NaN)
         {
@@ -141,11 +141,11 @@ namespace Materialklang
             b.WieBisher = double.IsPositiveInfinity(b.CAbs);
             b.Absolut = !b.WieBisher && b.CAbs > b.CRel * Math.Pow(10, AbsolutSchwelle / 20);
             b.C = b.WieBisher ? double.PositiveInfinity : b.Absolut ? b.CAbs : b.CRel;
-            b.Grund += b.WieBisher ? ", level unknown: 0.8.6-dev curve" : b.Absolut ? ", real level line (game compresses)" : ", relative to the game";
+            b.Grund += b.WieBisher ? ", level unknown: 0.8.8-dev curve" : b.Absolut ? ", real level line (game compresses)" : ", relative to the game";
             return b;
         }
 
-        /// <summary>Kurve bis 0.8.6-dev (ohne Ausblenden): Spielkurve bis r0, dann 1/r.</summary>
+        /// <summary>Kurve bis 0.8.8-dev (ohne Ausblenden): Spielkurve bis r0, dann 1/r.</summary>
         public static double AltRegel(Func<double, double> alt, double maxAlt, double r0, double d)
             => d <= r0 ? (d >= maxAlt ? 0 : alt(d / maxAlt)) : alt(Math.Min(r0, maxAlt) / maxAlt) * r0 / d;
 
@@ -153,7 +153,7 @@ namespace Materialklang
         public static double Ziel(Func<double, double> alt, double maxAlt, double r0, double maxNeu, double trimGain, double d)
             => Ziel(alt, maxAlt, new Bezug { Ref = r0, R0Alt = r0, C = double.PositiveInfinity, M = QuellMass.Unbekannt }, maxNeu, trimGain, d);
 
-        /// <summary>0.8.6: Zielpegel (linear, 0..1) in Entfernung d: bis r_ref Spielkurve, dann min(Kurve bis 0.8.6-dev, c * G(d)).</summary>
+        /// <summary>0.8.8: Zielpegel (linear, 0..1) in Entfernung d: bis r_ref Spielkurve, dann min(Kurve bis 0.8.8-dev, c * G(d)).</summary>
         public static double Ziel(Func<double, double> alt, double maxAlt, Bezug b, double maxNeu, double trimGain, double d)
         {
             if (d >= maxNeu) return 0.0;
@@ -177,7 +177,7 @@ namespace Materialklang
         }
 
         /// <summary>Baut die Kurve (x = d / maxNeu) als Hermite-Stuetzstellen mit Steigungen. Quellart und Pegel unbekannt: Kurve wie
-        /// bis 0.8.6-dev (r0 = alte Regel).</summary>
+        /// bis 0.8.8-dev (r0 = alte Regel).</summary>
         public static KurvenPunkt[] Bauen(Func<double, double> alt, double maxAlt, double maxNeu, double trimDb, out double r0)
         {
             var k = Bauen(alt, maxAlt, maxNeu, trimDb, QuellMass.Unbekannt, double.NaN, out Bezug b);
@@ -185,7 +185,7 @@ namespace Materialklang
             return k;
         }
 
-        /// <summary>0.8.6: Kurve mit Bezugsabstand und Abstandsgesetz der Quellart (m, ueberDb siehe Bezugsabstand).</summary>
+        /// <summary>0.8.8: Kurve mit Bezugsabstand und Abstandsgesetz der Quellart (m, ueberDb siehe Bezugsabstand).</summary>
         public static KurvenPunkt[] Bauen(Func<double, double> alt, double maxAlt, double maxNeu, double trimDb, QuellMass m, double ueberDb, out Bezug bez,
             double tabelleDbA = double.NaN, double kBezug = double.NaN)
         {
@@ -235,7 +235,7 @@ namespace Materialklang
             return k;
         }
 
-        /// <summary>Wo die Kurve bis 0.8.6-dev die Pegel-Linie c * G(d) schneidet (Stuetzstelle fuer den Knick), 0 = kein Schnitt.</summary>
+        /// <summary>Wo die Kurve bis 0.8.8-dev die Pegel-Linie c * G(d) schneidet (Stuetzstelle fuer den Knick), 0 = kein Schnitt.</summary>
         static double KnickLinie(Func<double, double> alt, double maxAlt, Bezug b)
         {
             if (double.IsInfinity(b.C) || b.C <= 0) return 0;

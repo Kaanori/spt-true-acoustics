@@ -83,9 +83,9 @@ namespace Materialklang
             // 10.11. (akustik-wand, Befund 1): beide Schluessel bleiben (cfg-Kompatibilitaet), wirken aber nicht mehr - der Wandweg rechnet
             // Quell- und Hoererraum vollstaendig (WegeKern.Wandweg), ohne Gewicht und ohne Deckel.
             RaumDiffus = c.Bind(Sek, "Receiving room: diffuse share", 0.5f,
-                new ConfigDescription("No effect since 0.8.6 (kept for old configs): the wall path now computes the diffuse fields of the source room and of your room in full (EN ISO 12354-1).", new AcceptableValueRange<float>(0f, 1f)));
+                new ConfigDescription("No effect since 0.8.8 (kept for old configs): the wall path now computes the diffuse fields of the source room and of your room in full (EN ISO 12354-1).", new AcceptableValueRange<float>(0f, 1f)));
             RaumMax = c.Bind(Sek, "Receiving room: max. correction (dB)", 6f,
-                new ConfigDescription("No effect since 0.8.6 (kept for old configs): the room correction is no longer capped, it follows from both rooms (EN ISO 12354-1).", new AcceptableValueRange<float>(0f, 12f)));
+                new ConfigDescription("No effect since 0.8.8 (kept for old configs): the room correction is no longer capped, it follows from both rooms (EN ISO 12354-1).", new AcceptableValueRange<float>(0f, 12f)));
             RaumMaxFlaeche = c.Bind(Sek, "Receiving room: max. wall area (m2)", 20f,
                 new ConfigDescription("Largest wall area that radiates into your room (the room box side towards the sound, capped).", new AcceptableValueRange<float>(2f, 100f)));
             FlankeAn = c.Bind(Sek, "Flanking transmission", true,
@@ -265,7 +265,7 @@ namespace Materialklang
         internal static void TStueck(int g, float th, float masse, float r1, float r2, float[] db)
         {
             if (!kRaum && !kFlanke) { float dyn = Physik.Dynamik.Value; for (int b = 0; b < WegeKern.N; b++) db[b] = Mathf.Clamp(db[b], 0f, dyn); return; }
-            // 0.8.6: Flaechenmasse vom Aufrufer (Tuerblatt: Masse des Blatts, sonst Physik.Masse(g, th)); gleiche Masse = gleiches Stueck
+            // 0.8.8: Flaechenmasse vom Aufrufer (Tuerblatt: Masse des Blatts, sonst Physik.Masse(g, th)); gleiche Masse = gleiches Stueck
             if (g == mG && Mathf.Abs(th - mTh) < 0.01f && masse == mM && Mathf.Abs(r1 - mR1) < 0.25f && Mathf.Abs(r2 - mR2) < 0.25f)
             { Array.Copy(mAus, db, WegeKern.N); LetzteRaumDb = mRaum0; LetzteFlankeDb = mFlanke0; Array.Copy(mDiffusB, LetzteDiffusB, WegeKern.N); LetzteDiffus = mDiffusB[0]; return; }
             Korrigieren(masse, r1, r2, db);

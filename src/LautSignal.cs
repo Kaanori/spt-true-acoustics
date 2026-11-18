@@ -26,7 +26,7 @@ namespace Materialklang
     //     120 m, 1/r-Kurve bis 0 bei 120 m). Nicht hier: die 29 Laden-Radios im Alarm (ClientBroadcastPlayer, 15-70 m, stellen
     //     Kurve/Reichweite selbst), Labs-Durchsagen (InteractiveSubscriber/QueuePlayer, Stereo).
     //  Umsetzung: Postfix auf SourceOccluder.CreateSourceWrappers; fuer Quellen, deren Name (Quelle, Eltern, Grosseltern, Clip)
-    //  ein Stichwort trifft: neue Kurve (UmgebungKern.Bauen, 0.8.6 mit Bezugsabstand), BetterSource.SetRolloff(neu) und Reichweite des Containers.
+    //  ein Stichwort trifft: neue Kurve (UmgebungKern.Bauen, 0.8.8 mit Bezugsabstand), BetterSource.SetRolloff(neu) und Reichweite des Containers.
     //  Okklusion/Raumwege/Luftdaempfung/Hoerbarkeit von True Acoustics wirken weiter (die Quelle bleibt im Occluder).
     // ---------------------------------------------------------------------------------------------
     internal static class LautSignal
@@ -233,7 +233,7 @@ namespace Materialklang
                 FesteQuellen.Melden(e.S.GetInstanceID(), m);
                 return;
             }
-            var pegelArt = k == QuellKlasse.Laut ? PegelArt.Alarm : QuellPegelKern.AusKlasse(k, e.Namen);   // 0.8.6 Abstandsgesetz der Quellart
+            var pegelArt = k == QuellKlasse.Laut ? PegelArt.Alarm : QuellPegelKern.AusKlasse(k, e.Namen);   // 0.8.8 Abstandsgesetz der Quellart
             var kk = FesteQuellen.KurveBauen(altF, e.MaxAlt, maxNeu, k == QuellKlasse.Laut ? TrimDb.Value : FesteQuellen.TrimDb.Value, pegelArt, e.S, out var bez);
             var keys = new Keyframe[kk.Length];
             for (int i = 0; i < kk.Length; i++) keys[i] = new Keyframe(kk[i].T, kk[i].V, kk[i].In, kk[i].Out);

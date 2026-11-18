@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------
-//  0.8.6: Tuerblatt und Fensterscheibe nach dem Massengesetz der Mod. torfluegel (12.11.2026): feste Torfluegel (unten). Reine Rechnung ohne Unity (Offline-Test,
+//  0.8.8: Tuerblatt und Fensterscheibe nach dem Massengesetz der Mod. torfluegel (12.11.2026): feste Torfluegel (unten). Reine Rechnung ohne Unity (Offline-Test,
 //  Demo-Seite). Spiel-Teil (Material, Dickenmessung am Collider, Portal): TuerenFenster.cs.
 //
 //  Kaan 09.11.2026: "Wir koennen nicht pauschal Werte fuer Tueren geben. Wenn das Material es durchlaesst, hoert man es
@@ -16,7 +16,7 @@
 //  Hohlkoerper-Regel: eine Metalltuer, die dicker gemessen wird als "Solid up to" ihrer Gruppe (Abschnitt 0), ist ein Kasten
 //  aus zwei Blechen (Stahltuer/Stahlzargentuer: Bleche um 1-1,5 mm, Fuellung ohne nennenswerte Masse). Die Fuellung und die
 //  Masse-Luft-Masse-Resonanz werden nicht gerechnet (die beiden Bleche zaehlen als eine Masse: eher zu wenig Daemmung).
-//  0.8.6 Livetest-Fix (Wegsuche Factory 10.11.2026: Wege durch geschlossene Tueren -19,6/-34,4/-52,5 dB fuer EIN Blatt, bis
+//  0.8.8 Livetest-Fix (Wegsuche Factory 10.11.2026: Wege durch geschlossene Tueren -19,6/-34,4/-52,5 dB fuer EIN Blatt, bis
 //  -105 dB @4 kHz fuer zwei): Fugen/Spalte um das Blatt sind ein paralleler Durchlass. Eine Tuer ist ein zusammengesetztes Bauteil:
 //    tau = (1 - s) * tau_Blatt + s * tau_Spalt,  R = -10 lg tau      (Flaechenanteile, EN 12354-1 / Bies & Hansen, "Engineering
 //  Noise Control", Abschn. 7.2.5 "composite transmission loss": 1 % offene Flaeche begrenzt R auf 20 dB, 0,1 % auf 30 dB).
@@ -49,7 +49,7 @@ namespace Materialklang
         public double EModul, Nu;   // Pa; 0 = kein Plattenmodell (nur Massengesetz)
         public DickeQuelle Quelle;
         public double Gemessen;     // m, Messwert (NaN = keine Messung)
-        public double Fuge;         // 0.8.6: offener Flaechenanteil der Fugen/Spalte (0 = dicht, nur das Blatt)
+        public double Fuge;         // 0.8.8: offener Flaechenanteil der Fugen/Spalte (0 = dicht, nur das Blatt)
 
         /// <summary>Flaechenmasse kg/m2.</summary>
         public double Masse => Dichte * (Hohl ? 2.0 * Platte : Math.Max(Dicke, 0.002));
@@ -62,7 +62,7 @@ namespace Materialklang
         public double ErsatzHolz;    // m, Tuerblatt aus Holz/Kunststoff/unbekannt ohne Messung (Innentuerblatt 40 mm)
         public double ErsatzGlas;    // m, Scheibe ohne Messung (Floatglas 6 mm)
         public double Blech;         // m, Blech einer Metalltuer (Hohlkoerper)
-        public double FugeTuer, FugeFenster;   // 0.8.6: offener Flaechenanteil der Fugen (Tuer / Fenster), 0 = dicht
+        public double FugeTuer, FugeFenster;   // 0.8.8: offener Flaechenanteil der Fugen (Tuer / Fenster), 0 = dicht
 
         public static TuerVorgaben Standard => new TuerVorgaben { Messen = true, ErsatzHolz = 0.04, ErsatzGlas = 0.006, Blech = 0.0015, FugeTuer = TuerKern.FugeTuer, FugeFenster = TuerKern.FugeFenster };
     }
@@ -77,10 +77,10 @@ namespace Materialklang
         // dicker = Zarge/Griff/Schraegmessung -> Ersatzdicke. Die Grenzen sind ANNAHMEN, keine Normwerte.
         public const double GlasMin = 0.003, GlasMax = 0.012, BlattMin = 0.01, BlattMax = 0.08;
 
-        /// <summary>0.8.6: wirksamer offener Flaechenanteil der Fugen (siehe Kopf): Tuer 0,5 %, Fenster 0,1 %.</summary>
+        /// <summary>0.8.8: wirksamer offener Flaechenanteil der Fugen (siehe Kopf): Tuer 0,5 %, Fenster 0,1 %.</summary>
         public const double FugeTuer = 0.005, FugeFenster = 0.001;
 
-        /// <summary>0.8.6: Blatt und Fuge parallel: R = -10 lg((1 - s) 10^(-R_Blatt/10) + s). s = 0 -> R_Blatt.</summary>
+        /// <summary>0.8.8: Blatt und Fuge parallel: R = -10 lg((1 - s) 10^(-R_Blatt/10) + s). s = 0 -> R_Blatt.</summary>
         public static double MitFuge(double blattDb, double s)
         {
             if (!(s > 0)) return blattDb;
@@ -89,7 +89,7 @@ namespace Materialklang
         }
 
         /// <summary>
-        /// 0.8.6 Tuerfuge-Fix (Factory 10.11.2026, Tor #209 45 dB statt hoechstens 23 dB): geschlossener Teil eines Portals OHNE
+        /// 0.8.8 Tuerfuge-Fix (Factory 10.11.2026, Tor #209 45 dB statt hoechstens 23 dB): geschlossener Teil eines Portals OHNE
         /// Blattmodell (kein Portalobjekt zum Job-Index, Abschnitt 4 aus). Annahmen: Blatt = der einzige bekannte Wert dieses Portals,
         /// die Schliessung des Spiels auf der dB-Skala der Mod (blattDb = Schliessung x WallOcclusion x Max. insulation); Fuge = die
         /// einer ungedichteten Innentuer (FugeTuer 0,5 %, siehe Kopf): ein schliessbares Portal des Spiels ist eine Tuer/ein Tor in
@@ -159,7 +159,7 @@ namespace Materialklang
                 double fc = Bauakustik.Koinzidenzfrequenz(b.Dichte, Math.Max(b.Platte, 0.0005), b.EModul, b.Nu);
                 r = Bauakustik.Koinzidenz(r, m, f, fc, eta);
             }
-            r = MitFuge(Math.Max(0, r), b.Fuge);   // 0.8.6: Fugen als paralleler Durchlass
+            r = MitFuge(Math.Max(0, r), b.Fuge);   // 0.8.8: Fugen als paralleler Durchlass
             return Math.Max(0, Math.Min(maxDb, r));
         }
 

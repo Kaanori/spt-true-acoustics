@@ -6,14 +6,14 @@ using System.Linq;
 namespace Materialklang.Schallweg
 {
     // ------------------------------------------------------------------------------------------
-    //  0.8.6 Wegsuche (Etappe 3): Hoererbaum-Suche wie Etappe2-Karten/Suche2.cs (WegeBaum, HoererBaumBauen, Verfeinern, Bewerten,
+    //  0.8.8 Wegsuche (Etappe 3): Hoererbaum-Suche wie Etappe2-Karten/Suche2.cs (WegeBaum, HoererBaumBauen, Verfeinern, Bewerten,
     //  RohrTeilen, Durchgang) mit Rohr (Etappe2/Rohr.cs + RohrKarten.cs), Tueren (Massengesetz des Blatts, TuerKern) und gemessener
     //  Dicke (Etappe2/Dicke.cs LokalAn). Gleiche Formeln und Reihenfolgen - der Offline-Test vergleicht mit den Etappe-2-Werten.
     //  Unterschiede zum Werkzeug: (1) kein Zwischenspeicher fuer Hoererbaeume - der Aufrufer (Arbeitsfaden) haelt den Baum;
     //  (2) Zeitbudget je Quelle (BudgetMs, 0 = aus); (3) Wald und Gelaendeprofil fehlen noch (Factory, Labs, Labyrinth haben beides
     //  nicht); (4) Daemmung mit den Standard-Dichten (nicht den F12-Werten), wie das Werkzeug.
     //  Fadensicherheit: Netz, BVH, Portale werden nur gelesen. Eine Suche-Instanz gehoert genau einem Faden.
-    //  0.8.6 Livetest-Fix (Factory 10.11.2026, Bericht Wegsuche/BERICHT-LIVETEST-FACTORY.md), je Schalter abschaltbar (alle aus =
+    //  0.8.8 Livetest-Fix (Factory 10.11.2026, Bericht Wegsuche/BERICHT-LIVETEST-FACTORY.md), je Schalter abschaltbar (alle aus =
     //  genau Etappe 2, der Offline-Test prueft das gegen die Bezugswerte):
     //   KettenDeckel  Mehrfachbeugung begrenzt (Bewerten): Summe der UTD-Kanten hoechstens wie ISO 9613-2 (dicker Schirm, C3, Deckel
     //                 20/25 dB). Vorher -100...-170 dB fuer Wege mit 8-10 Kanten durch offene Hallen (Weg 14 % ueber der Luftlinie).
@@ -71,7 +71,7 @@ namespace Materialklang.Schallweg
         public bool TuerenAn { get => G.TuerenAn; set => G.TuerenAn = value; }
         public double TuerStrafe { get => G.TuerStrafe; set => G.TuerStrafe = value; }
         public double SchrankeDb = 20;
-        public bool KettenDeckel { get => G.KettenDeckel; set => G.KettenDeckel = value; }   // 0.8.6 Livetest-Fix (siehe Kopf)
+        public bool KettenDeckel { get => G.KettenDeckel; set => G.KettenDeckel = value; }   // 0.8.8 Livetest-Fix (siehe Kopf)
         public bool DeckelNurDraussen { get => G.DeckelNurDraussen; set => G.DeckelNurDraussen = value; }   // Raid-3-Fix
         /// <summary>Raid-3-Fix: Raeume des Spiels (gleiche Instanz wie der Platz dieser Suche, nur lesend: RaumModell.Lage). null = unbekannt.</summary>
         public RaumModell Raum;
@@ -282,7 +282,7 @@ namespace Materialklang.Schallweg
         readonly Dictionary<long, Dictionary<int, bool>> quellSicht = new Dictionary<long, Dictionary<int, bool>>();
         static long Zelle1(V p) => Wegenetz.Schluessel((int)Math.Floor(p.X), (int)Math.Floor(p.Y), (int)Math.Floor(p.Z));
 
-        /// <summary>0.8.6: Stand einer Hoererbaum-Suche (fortsetzbar). Unterbrochen = Zeitbudget vor dem ersten Weg (Arbeiter setzt im
+        /// <summary>0.8.8: Stand einer Hoererbaum-Suche (fortsetzbar). Unterbrochen = Zeitbudget vor dem ersten Weg (Arbeiter setzt im
         /// naechsten Takt fort); Fertig = alle Abbruchbedingungen von Suche2.WegeBaum geprueft oder Budget nach dem ersten Weg.
         /// Weg A: Kandidaten als Heap (Gesamtlaenge, Knoten); solche jenseits des fertigen Baums warten in Rest, bis der Baum sie erreicht.</summary>
         public sealed class Stand
@@ -416,7 +416,7 @@ namespace Materialklang.Schallweg
                 long start = Stopwatch.GetTimestamp();
                 while (true)
                 {
-                    // Zeitbudget: nach dem ersten Weg hart; vor dem ersten 4x, dann Unterbrechung (0.8.6: fortsetzen statt "0 Wege").
+                    // Zeitbudget: nach dem ersten Weg hart; vor dem ersten 4x, dann Unterbrechung (0.8.8: fortsetzen statt "0 Wege").
                     // Raid-2-Fix: VOR dem Weiterrechnen des Baums geprueft, und das Weiterrechnen selbst endet an derselben Frist.
                     long bis = budgetMs > 0 ? start + (long)((wege.Count > 0 ? budgetMs : 4 * budgetMs) * Stopwatch.Frequency / 1000.0) : 0;
                     bool ueber = budgetMs > 0 && Stopwatch.GetTimestamp() > bis;
@@ -696,7 +696,7 @@ namespace Materialklang.Schallweg
         /// <summary>Suche beenden, ohne weiterzusuchen (Arbeiter: zu viele Unterbrechungen). Die bisher gefundenen Wege gelten.</summary>
         public void Aufgeben(Stand s) { if (s.Fertig) return; s.Fertig = true; s.Abgebrochen = true; RohrTeilen(s.Wege); }
 
-        // ================================================================ 0.8.6 Freistellen (Quelle/Hoerer im Koerper)
+        // ================================================================ 0.8.8 Freistellen (Quelle/Hoerer im Koerper)
         // Befund Livetest: 816 Lampen-Zeilen (Median -42 dB) - der Quellpunkt der Neonlampen steckt im Gehaeuse; von dort sieht er keinen
         // Netzknoten (0 Wege) und der Durchgang zaehlt das Gehaeuse als "2 Waende" (-60 dB). Ein Punkt IN einem geschlossenen Koerper
         // trifft in fast allen Richtungen zuerst eine Rueckseite (Normale zeigt nach aussen, Treffer.Vorne = false). Dann: entlang der
@@ -1155,7 +1155,7 @@ namespace Materialklang.Schallweg
             return innen;
         }
 
-        // ================================================================ 0.8.6 Mehrfachbeugung begrenzen
+        // ================================================================ 0.8.8 Mehrfachbeugung begrenzen
         /// <summary>
         /// Obergrenze der Beugungsdaempfung (dB, >= 0, ohne die Kugelwelle ueber den Umweg) eines Wegs mit nb Kanten, Laenge L, Direktlinie
         /// d0, Abstand e zwischen erster und letzter Kante. Befund Livetest: die Summe der UTD-Kanten (Epstein-Peterson: jede Kante mit ihren
@@ -1283,7 +1283,7 @@ namespace Materialklang.Schallweg
         public static double Wirksam(int g, double dicke) => g == 7 && dicke > GlasMax ? GlasScheibe : dicke;
         static readonly TuerVorgaben OhneFuge = new TuerVorgaben { Messen = true, ErsatzHolz = 0.04, ErsatzGlas = 0.006, Blech = 0.0015 };
         public static TuerBlatt Blatt(int g, double dicke, bool fuge = true) => TuerKern.Waehlen(g, Gruppen.Dichte[g], Gruppen.Massiv[g], dicke, g == 7, fuge ? TuerVorgaben.Standard : OhneFuge);
-        /// <summary>Daemmung (dB) eines Koerpers bzw. (dicke &lt; 0) eines Tuerblatts; fuge = 0.8.6 Fugen als paralleler Durchlass (TuerKern).</summary>
+        /// <summary>Daemmung (dB) eines Koerpers bzw. (dicke &lt; 0) eines Tuerblatts; fuge = 0.8.8 Fugen als paralleler Durchlass (TuerKern).</summary>
         public static double Daemmung(int g, double dicke, double f, bool fuge = true)
         {
             if (dicke < 0) return TuerKern.Db(Blatt(g, -dicke, fuge), f, true, 0.1, 60);

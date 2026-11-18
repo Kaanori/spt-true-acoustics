@@ -6,7 +6,7 @@ using System.Text;
 namespace Materialklang.Schallweg
 {
     // ------------------------------------------------------------------------------------------
-    //  0.8.6 Wegsuche (Etappe 3): Cache-Datei eines Wegenetzes je Karte bzw. Kachel.
+    //  0.8.8 Wegsuche (Etappe 3): Cache-Datei eines Wegenetzes je Karte bzw. Kachel.
     //  Name: BepInEx/cache/TrueAcoustics/<karte>-<pruefsumme:x16>.wegenetz
     //  Inhalt: alles, was die Wegsuche im Spiel braucht (Knoten, Nachbarlisten, BVH der Schall-Dreiecke, Koerper, Portale), als
     //  reine Felder. Die Datei wird aus den Spieldateien des Rechners gebaut, auf dem sie liegt (Etappe-2-Leser bzw. spaeter der
@@ -19,7 +19,7 @@ namespace Materialklang.Schallweg
     internal sealed class WegDaten
     {
         public const uint Magie = 0x4E574154u;   // "TAWN"
-        public const int FormatVersion = 2;   // 2 (0.8.6 Livetest-Fix): + Raeume (SpatialAudioRoom-Kaesten) und alle Spielportale mit ihren Raeumen
+        public const int FormatVersion = 2;   // 2 (0.8.8 Livetest-Fix): + Raeume (SpatialAudioRoom-Kaesten) und alle Spielportale mit ihren Raeumen
         public int Version = FormatVersion;    // Version der gelesenen Datei (1 = ohne Raeume)
 
         // Kopf

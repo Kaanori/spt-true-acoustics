@@ -15,7 +15,7 @@ using UnityEngine;
 namespace Materialklang
 {
     // Tueren und Fenster daempfen nach ihrem Blatt: Material des Tuerblatts bzw. der Scheibe und gemessene Dicke, Massengesetz
-    // je Band (TuerKern.cs, dieselben Formeln wie die Waende). 0.8.6: bis 0.8.5 bekam jede geschlossene Tuer einen festen Anteil
+    // je Band (TuerKern.cs, dieselben Formeln wie die Waende). 0.8.8: bis 0.8.5 bekam jede geschlossene Tuer einen festen Anteil
     // der Hoechstdaemmung je Typ (Holz duenn/dick, Metall duenn/dick, Fenster) - Kaan: "Wir koennen nicht pauschal Werte fuer
     // Tueren geben. Wenn das Material es durchlaesst, hoert man es entsprechend gedaempft."
     //
@@ -101,7 +101,7 @@ namespace Materialklang
                 "A gate whose game opening is only the small pass door (e.g. the big steel gates on Factory) also lets sound through its fixed wings: " +
                 "they are counted as leaves of the same build (steel sheet on a frame with unsealed gaps, like the door leaf) together with the opening, " +
                 "instead of not at all (room path) or as solid steel (through-wall path). Found automatically: flat plates in the same plane that belong " +
-                "to the same gate object. Off = only the pass door (behaviour up to 0.8.5). Applies live.");
+                "to the same gate object. Off = only the pass door (behaviour up to 0.8.7). Applies live.");
             FluegelAn.SettingChanged += (_, __) => WandZwischenRaeumen.Neu();
             hauptFaden = System.Threading.Thread.CurrentThread.ManagedThreadId;
             c.SettingChanged += (_, __) => { stand++; Ziele.Clear(); };
@@ -343,7 +343,7 @@ namespace Materialklang
 
         /// <summary>
         /// Tuer zur DoorID. false = Verzeichnis noch nicht da (spaeter nochmal), true = gesucht (d = null: keine Tuer mit dieser ID).
-        /// 0.8.6 Tuerfuge-Fix: bis hierher nur GameWorld.World._interactiveObjectsDictionary. Das World-Objekt (ClientWorld) legt aber
+        /// 0.8.8 Tuerfuge-Fix: bis hierher nur GameWorld.World._interactiveObjectsDictionary. Das World-Objekt (ClientWorld) legt aber
         /// nur das Netzspiel an (NetworkGame -> ClientWorld.Create -> World.Create, Dekompilat EFT 4.1.6); im lokalen Raid (SPT,
         /// LocalGame : BaseLocalGame) gibt es keins -> GameWorld.World ist null, JEDE Tuer blieb ohne Blattmodell (Factory: alle 59
         /// Tuer-/Torportale, z. B. Tor #209 mit 45 dB fugenlos). Das lokale Spiel fuehrt dasselbe Verzeichnis im
@@ -401,7 +401,7 @@ namespace Materialklang
             else if (sp != null && sp.portalType == BaseSpatialAudioPortal.PortalType.Opening)
             {
                 if (!FindeTuer(sp.DoorID, out var tuer)) return null;   // Welt noch nicht bereit
-                // 0.8.6 Tuerfuge-Fix: Tuer nicht im Verzeichnis / zu weit weg (wie SpatialAudioPortal.IsPositionIdentical) -> Ersatz-Tuer
+                // 0.8.8 Tuerfuge-Fix: Tuer nicht im Verzeichnis / zu weit weg (wie SpatialAudioPortal.IsPositionIdentical) -> Ersatz-Tuer
                 // nach dem Massengesetz MIT Fuge statt "kein Blattmodell" (dort galt die Schliessung fugenlos)
                 if (tuer == null) info = ErsatzTuer(p.name, "door object not found");
                 else if (!sp.IsPositionIdentical(tuer.transform.position)) info = ErsatzTuer(p.name, "door object too far from the portal");
@@ -422,7 +422,7 @@ namespace Materialklang
         }
 
         /// <summary>
-        /// 0.8.6 Tuerfuge-Fix: Tuerportal, dessen Tuerobjekt nicht zu finden ist. Annahmen: Blatt der Gruppe "Doors (game object, base
+        /// 0.8.8 Tuerfuge-Fix: Tuerportal, dessen Tuerobjekt nicht zu finden ist. Annahmen: Blatt der Gruppe "Doors (game object, base
         /// value)" (Abschnitt 0: Dichte, Plattenwerte wie Holz) mit der Ersatzdicke Holz (Innentuerblatt 40 mm, Abschnitt 4), Fuge der
         /// Innentuer (TuerKern.FugeTuer) - wie jede gemessene Tuer durch TuerKern.Waehlen/Db, nur ohne Material und Messung.
         /// </summary>
@@ -620,7 +620,7 @@ namespace Materialklang
         static TuerVorgaben Vorgaben() => new TuerVorgaben
         {
             Messen = Messen.Value, ErsatzHolz = ErsatzHolz.Value, ErsatzGlas = ErsatzGlas.Value, Blech = Blech.Value * 0.001,
-            FugeTuer = TuerKern.FugeTuer, FugeFenster = TuerKern.FugeFenster   // 0.8.6 Livetest-Fix: Fugen als paralleler Durchlass (TuerKern)
+            FugeTuer = TuerKern.FugeTuer, FugeFenster = TuerKern.FugeFenster   // 0.8.8 Livetest-Fix: Fugen als paralleler Durchlass (TuerKern)
         };
 
         /// <summary>Blatt waehlen und dB je Band rechnen (nur wenn sich Einstellungen geaendert haben).</summary>

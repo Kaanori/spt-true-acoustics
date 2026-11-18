@@ -16,7 +16,7 @@ using UnityEngine;
 namespace Materialklang
 {
     // ------------------------------------------------------------------------------------------
-    //  0.8.6 - Abschnitt 19: eigene Schallweg-Suche (Etappe 3, experimentell, Standard AUS).
+    //  0.8.8 - Abschnitt 19: eigene Schallweg-Suche (Etappe 3, experimentell, Standard AUS).
     //  Ursache: Die Spielsuche (T/D/R auf der Direktlinie, Raumweg ueber die Portalrouten des Spiels) kennt keine Wege um Kanten
     //  durch den Raum. Die Wegsuche (Etappe 2, eigenes Entwicklungswerkzeug ausserhalb des Plugins) rechnet sie auf einem Netz aus Beugungskanten und Portalen:
     //  Hoererbaum (Dijkstra je 1-m-Zelle des Hoerers) + Sichtstrahlen je Quelle, UTD-Beugung, Rohr, Tuerblaetter, Durchgang.
@@ -603,7 +603,7 @@ namespace Materialklang
                 // diffus-hall: Hallfeld nur, wenn der Hoerer in einem gemessenen Innenraum steht (sonst strahlt die letzte Oeffnung gerichtet)
                 var raumAnteil = HallZonen.RaumFuer(h, q, 250f, out _) ? DiffusVoll : default(RaumwegErgebnis);
                 if (!r.Frei)
-                    foreach (var k in r.Raeume)   // 0.8.6: Raumanteil (Diffusfeld) der Raumfolgen, Richtung = letzte Oeffnung
+                    foreach (var k in r.Raeume)   // 0.8.8: Raumanteil (Diffusfeld) der Raumfolgen, Richtung = letzte Oeffnung
                         z.Mix.Kandidat(k.Id, Daempf(k.Db[0], dyn), Daempf(k.Db[1], dyn), Daempf(k.Db[2], dyn), new V3(k.Austritt.X, k.Austritt.Y, k.Austritt.Z), raumAnteil, null, 0);
                 z.Mix.Uebernehmen(jetzt, BlendS, RangNJetzt, BreiteJetzt);
                 z.Kette = KlangLog.An ? Wegsuche.KetteText(r) : null;

@@ -398,7 +398,7 @@ namespace Materialklang
         internal static float RichtW;
         internal static SchussInfo Aktuell = new SchussInfo();
 
-        // 0.8.6 Kennlinie (Hoerbarkeit.KennPegel): Schalldaempfer je Quelle - der Muendungsknall ist rund 20 dB leiser und faellt damit
+        // 0.8.8 Kennlinie (Hoerbarkeit.KennPegel): Schalldaempfer je Quelle - der Muendungsknall ist rund 20 dB leiser und faellt damit
         // frueher unter das Knie. Gesetzt in PrepareShot (SebTeil.Vorbereiten), gelesen in Physik.LautstaerkeKern. Bekannte Grenze: ein
         // Pool-Schuss traegt bis zu seinem PrepareShot den Wert des vorigen Schusses (wie die Position, siehe Auftrag 10.11.).
         sealed class Merker { public bool Gedaempft; }
@@ -741,7 +741,7 @@ namespace Materialklang
                     info.Gedaempft = false;
                     info.Nah = false;
                 }
-                SebAkustik.GedaempftSetzen(info.Quelle, info.Gedaempft);   // 0.8.6 Kennlinie
+                SebAkustik.GedaempftSetzen(info.Quelle, info.Gedaempft);   // 0.8.8 Kennlinie
             }
         }
 

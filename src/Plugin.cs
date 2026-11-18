@@ -29,7 +29,7 @@ namespace Materialklang
     [BepInDependency("red.soundenginebackport", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Version = "0.8.6";
+        public const string Version = "0.8.8";
         internal static ManualLogSource Log;
         internal static Plugin Instanz;   // 0.8.4: fuer Coroutinen (Kartenexport)
         internal static ConfigEntry<bool> Aktiv;
@@ -76,15 +76,15 @@ namespace Materialklang
                 Sicher("scene: TuerenFenster", TuerenFenster.Leeren); Sicher("scene: WandZwischenRaeumen", WandZwischenRaeumen.Leeren); Sicher("scene: KlangLog", KlangLog.SzeneGewechselt);
                 Sicher("scene: Fernschuss", Fernschuss.SzeneGewechselt); Sicher("scene: Umgebung", Umgebung.SzeneGewechselt); Sicher("scene: LautSignal", LautSignal.SzeneGewechselt);
                 Sicher("scene: WandDaempfung", WandDaempfung.SzeneGewechselt); Sicher("scene: Kalibrierung", Kalibrierung.SzeneGewechselt);
-                Sicher("scene: Richtung", Richtung.SzeneGewechselt); Sicher("scene: Ersatzweg", Raumweg.Ersatzweg.SzeneGewechselt);   // 0.8.6
-                Sicher("scene: Wegsuche", Wegsuche.SzeneGewechselt);   // 0.8.6 Abschnitt 19
+                Sicher("scene: Richtung", Richtung.SzeneGewechselt); Sicher("scene: Ersatzweg", Raumweg.Ersatzweg.SzeneGewechselt);   // 0.8.8
+                Sicher("scene: Wegsuche", Wegsuche.SzeneGewechselt);   // 0.8.8 Abschnitt 19
                 Sicher("scene: Testquelle", Testquelle.SzeneGewechselt);   // testquelle (12.11.): Abschnitt 20
                 Sicher("scene: MetaVerdeckung", MetaVerdeckung.SzeneGewechselt);   // metaschalter (17.11.): Abschnitt 22
             };
             var h = new Harmony("kaan.materialklang");
             // Gesamtreview C1: jeder Teil fuer sich - ein Fehler in einem Anwenden bricht die folgenden nicht mehr ab
             Sicher("Harmony.PatchAll", () => h.PatchAll(typeof(Plugin).Assembly));
-            Sicher("CullingFix", () => CullingFix.Anwenden(h));   // 0.8.6: AudioSourceCulling reihum + Audio-Reset (1. General)
+            Sicher("CullingFix", () => CullingFix.Anwenden(h));   // 0.8.8: AudioSourceCulling reihum + Audio-Reset (1. General)
             Sicher("BotHoeren", () => BotHoeren.Anwenden(h));
             Sicher("TuerenFenster", () => TuerenFenster.Anwenden(h));
             Sicher("WandZwischenRaeumen", () => WandZwischenRaeumen.Anwenden(h));
@@ -129,7 +129,7 @@ namespace Materialklang
             Sicher("Wege.Tick", tWege); Sicher("HallZonen.Tick", tHall); Sicher("KartenExport.Tick", tKarte); Sicher("Statistik", tStat);
             Sicher("LiveStart.Tick", tLive); Sicher("Wetter.Tick", tWetter); Sicher("Wald.Tick", tWald); Sicher("Umgebung.Tick", tUmg);
             Sicher("LautSignal.Tick", tLaut); Sicher("FesteQuellen.Tick", tFest); Sicher("SkriptQuellen.Tick", tSkript); Sicher("WandDaempfung.Tick", tWand);
-            Sicher("Wegsuche.Tick", tWegsuche);   // 0.8.6 Abschnitt 19
+            Sicher("Wegsuche.Tick", tWegsuche);   // 0.8.8 Abschnitt 19
             Sicher("FremdPegel.Tick", tFremd);   // galpegel (10.11.): Fremdverstaerkung je Klanggruppe (Guns Are Loud)
             Sicher("Testquelle.Tick", tTest);   // testquelle (12.11.)
             Sicher("MetaVerdeckung.Tick", tMeta);   // metaschalter (17.11.)
@@ -278,7 +278,7 @@ namespace Materialklang
                             // mit der Strahllaenge zwischen den beiden Treffern (Untergrenze 0,05 wie die Wegsuche, WandLinie.Senkrecht)
                             Vector3 strahl = b.point - a.point;
                             float thS = th * WandLinie.Senkrecht(th > 1e-4f ? Mathf.Abs(Vector3.Dot(a.normal, strahl / th)) : 1f);
-                            // 0.8.6: Tuer-Collider = Blatt der Tuer (Material + gemessene Blattdicke), wie das Portal
+                            // 0.8.8: Tuer-Collider = Blatt der Tuer (Material + gemessene Blattdicke), wie das Portal
                             for (int k = 0; k < 3; k++) band[k] = Physik.DaemmungStueck(ia, m, thS, (float)f[k], false);
                             // r1 = Quelle -> Wand (Strahl von der Quelle), r2 = Hoerer -> Wand (Strahl vom Hoerer)
                             Wege.TStueck(m, thS, Physik.MasseStueck(ia, m, thS), b.distance, a.distance, band);
@@ -466,7 +466,7 @@ namespace Materialklang
             TuerenFenster.DiagnoseLoggen();
             WandZwischenRaeumen.DiagnoseLoggen();
             WandDaempfung.Loggen();
-            Kalibrierung.Loggen();   // 0.8.6
+            Kalibrierung.Loggen();   // 0.8.8
             FremdPegel.Loggen();     // galpegel (10.11.)
             if (rechnungen == 0) return;
             var tr = string.Join(", ", Enumerable.Range(0, Plugin.AnzahlGruppen).Where(i => treffer[i] > 0)

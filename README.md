@@ -6,7 +6,9 @@ Sound that knows what a wall is made of and which way the sound really travels. 
 
 **🎧 Hear the difference yourself:** [True Acoustics Demo](https://claude.ai/artifact/7BXLomAnuBnL6ofqfq41RC) – vanilla vs. True Acoustics side by side, plus a sound sandbox where you build walls, doors and windows (or load a real map) and listen live. Headphones recommended.
 
-> **BETA – version 0.8.6-beta.** This version has been played in real raids, but by **one tester**, mostly on **Factory** (plus a first check on Customs). Several parts were added in the last days and are running but not yet judged by ear (see the labels below). Expect rough edges and values that still need tuning. Feedback is very welcome: please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues) and, if you can, attach the relevant lines of `BepInEx/LogOutput.log` (they start with `[Diagnostics]`, `[Reverb]` or `[Calibration]`).
+> **BETA – version 0.8.8-beta.** This version has been played in real raids, but by **one tester**, mostly on **Factory** (plus a first check on Customs). Several parts were added in the last days and are running but not yet judged by ear (see the labels below). Expect rough edges and values that still need tuning. Feedback is very welcome: please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues) and, if you can, attach the relevant lines of `BepInEx/LogOutput.log` (they start with `[Diagnostics]`, `[Reverb]` or `[Calibration]`).
+
+**Version numbers:** this release is **0.8.8** everywhere (Forge, GitHub, DLL/log). The two hotfixes before it were published as 0.8.6 and 0.8.7 on the Forge and as v0.8.5.1 and v0.8.5.2 on GitHub – same files, different numbers. From now on there is one number.
 
 ## How this mod was made (AI disclosure)
 
@@ -23,7 +25,7 @@ bug, please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues
 
 ## Installation
 
-1. Download `Materialklang-0.8.6-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
+1. Download `Materialklang-0.8.8-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
 2. Extract it **into your SPT game folder** (the folder that contains `EscapeFromTarkov.exe`).
    The ZIP already has the right layout; the mod ends up in `BepInEx/plugins/`.
    On Windows, make sure "Extract All" does not add an extra subfolder.
@@ -44,7 +46,7 @@ How sure we are about each point:
 | **[built]** | Built and checked in the offline tests, running in the tester's game, but not yet verified in a raid. |
 | **[off]** | Experimental, **off by default**. |
 
-### What's in (0.8.6-beta)
+### What's in (0.8.8-beta)
 
 **Loudness and distance**
 - **[heard]** **One loudness curve instead of a flat factor.** Insulation now counts in real decibels (`Loudness factor` 1 = real physics: quiet sounds behind thick concrete are gone). Only very loud sounds are squeezed, like the game mix does it: above a real level of 85 dB(A) at your ear each real dB counts 0.2 dB (`Compression knee (dB(A))`, `Compression above knee`). A rifle shot behind a closed door stays clearly audible, footsteps behind the same door get quiet. The knee was tried at 95 and set back to 85 by ear.
@@ -84,7 +86,7 @@ How sure we are about each point:
 - **[log]** **Steadier sound:** no low-pass flutter ("robot sound"); no clicks from the mod found in raid recordings. **[built]** No flaring start of footsteps (`Idle sources keep their level`).
 
 **Compatibility and tools**
-- **[log]** Sound Engine Backport **1.0.x and 1.1.x** (since 0.8.5.2; played with 1.1.1). **[built]** SEB's legacy (V1) weapons now get weapon directivity and the distance rules too (`Cover SEB legacy (V1) weapons`).
+- **[log]** Sound Engine Backport **1.0.x and 1.1.x** (since 0.8.7, on GitHub v0.8.5.2; played with 1.1.1). **[built]** SEB's legacy (V1) weapons now get weapon directivity and the distance rules too (`Cover SEB legacy (V1) weapons`).
 - **[log]** **Test source** (section 20) for measurements: place a sound somewhere and play it from elsewhere.
 - **[off]** `21. Gunshot spatialization (experimental)`, `22. Meta occlusion (experimental)`, `19. Path search (experimental)` (needs a map network that is not shipped), `Save heard sounds for the demo`.
 - **Switched off after a listening test:** a real reverb tail for sounds from other rooms (`Room paths: diffuse part as real reverb`) was built and ran in raids, but every variant sounded wrong to the tester; only the dry version sounded right. It is **off** and not being developed further.
@@ -134,13 +136,13 @@ bug, please open an [issue](https://github.com/Kaanori/spt-true-acoustics/issues
 
 ## Installation
 
-1. Download `Materialklang-0.8.6-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
+1. Download `Materialklang-0.8.8-beta.zip` from the [Releases](https://github.com/Kaanori/spt-true-acoustics/releases) page.
 2. Extract it **into your SPT game folder** (the folder that contains `EscapeFromTarkov.exe`).
    The ZIP already has the right layout; the mod ends up in `BepInEx/plugins/`.
    On Windows, make sure "Extract All" does not add an extra subfolder.
 3. Restart the game.
 
-**Defaults are the author's tested settings.** The defaults of 0.8.6 are the settings the tester played with. **If you update from 0.8.5 or older, BepInEx keeps your saved values** – to get the tested state, either delete `BepInEx/config/kaan.materialklang.cfg` once (all your own changes are lost) or set these by hand in F12:
+**Defaults are the author's tested settings.** The defaults of 0.8.8 are the settings the tester played with. **If you update from 0.8.7 or older, BepInEx keeps your saved values** – to get the tested state, either delete `BepInEx/config/kaan.materialklang.cfg` once (all your own changes are lost) or set these by hand in F12:
 
 - `0. Physics Mode (real values)`: `Loudness factor` 1 (was 0.2 – an old 0.2 squeezes on top of the new loudness curve); `No bass cut on the path (high-pass)` on; `Quiet sources: real audibility` off; `Room paths: diffuse part as real reverb` off
 - `7. Weapon Directivity`: `Occluded shots: no extra occluded mix (physics)` on
@@ -209,7 +211,7 @@ Every part has its own switch in the F12 menu. Switch off `1. General → Enable
 
 ## Settings overview (F12)
 
-Sections and the most important settings with their defaults in 0.8.6-beta (the tester's settings). All values have tooltips in the menu, and almost all apply **live**.
+Sections and the most important settings with their defaults in 0.8.8-beta (the tester's settings). All values have tooltips in the menu, and almost all apply **live**.
 
 | Section | Key settings (default) |
 |---|---|
@@ -262,7 +264,7 @@ A line looks like this (one line, wrapped and shortened here):
 ```
 
 - `d` distance to you, `path` the chosen path (`direct`, `through walls`, `via doors/windows (rooms)`, `through wall between rooms`), `hits` the pieces the rays went through (material, thickness, dB, number of rays, collider name), `vol`/`lp`/`hp` the final volume and filters.
-- Since 0.8.6 lines carry many more fields (direction from the opening, extra voices, diffuse part, lamp level, `near re 1st blend limit` for the close recording …). The `ids` at the end tell sources of the same name apart – group by them when you compare lines.
+- Since 0.8.8 lines carry many more fields (direction from the opening, extra voices, diffuse part, lamp level, `near re 1st blend limit` for the close recording …). The `ids` at the end tell sources of the same name apart – group by them when you compare lines.
 - Fixed sources have their own lines (`[Walls]`, `[Fixed]`, `[Vehicle]`, `[Scripted]`, `[Ambient]`), the precomputed paths `[PathTable]`.
 - Settings in effect are written at the top of each file, and every live change as a `[Live]` line.
 
@@ -300,7 +302,7 @@ TL is clamped to 0 ... 60 dB ("Max. insulation")
 - **The 60 dB cap** stands for *flanking*: in a real building sound also leaks around a wall (ceilings, floors, pipes) [3]. The value 60 dB itself is an assumption.
 - **Hollow objects:** if the game reports a piece thicker than the material's `Solid up to` value, it counts as two shells of that thickness (simplification).
 - **Coincidence:** above the *coincidence frequency* `fc` of a panel, real walls insulate less than the mass law says [1, 2]. This is corrected for concrete/stone, thick metal, thick wood, glass and door leaves with the three-region shape of **Sharp's prediction method** [12, 13]; the loss factor 0.1 is fitted to typical measured curves, **not a literature value**.
-- **Several walls in a row** (since 0.8.6): walls separated by air count one by one, each with the room behind it (EN ISO 12354-1 [3]); a glass pane and a double shell count as such, and the sound field of the source room drives the wall (a small hard room pushes more through its walls than a large soft one).
+- **Several walls in a row** (since 0.8.8): walls separated by air count one by one, each with the room behind it (EN ISO 12354-1 [3]); a glass pane and a double shell count as such, and the sound field of the source room drives the wall (a small hard room pushes more through its walls than a large soft one).
 
 Examples with the default densities (single wall, 250 Hz, before the loudness curve):
 
@@ -321,7 +323,7 @@ Examples with the default densities (single wall, 250 Hz, before the loudness cu
 | 02 | Soil/Terrain | 1700 | 3.0 | Typical value for soil (roughly 1500–2000) |
 | 03 | Gravel/Pebbles | 1600 | 3.0 | Typical value for loose gravel |
 | 04 | Metal thick | 7850 | 0.01 | Structural steel, EN 1993-1-1 [5] |
-| 05 | Metal thin | 7850 | 0.002 | Steel, as above (sheet 2 mm since 0.8.6) |
+| 05 | Metal thin | 7850 | 0.002 | Steel, as above (sheet 2 mm since 0.8.8) |
 | 06 | Wood thick | 600 | 0.3 | Typical softwood (roughly 400–700) |
 | 07 | Wood thin | 500 | 0.05 | Typical softwood / plywood |
 | 08 | Glass | 2500 | 0.02 | Soda-lime glass, EN 572-1 [6] |
@@ -337,15 +339,15 @@ The `Solid up to` thicknesses are assumptions about the game's geometry, not lit
 
 ### 3. From decibels to what you hear
 
-- **Loudness curve (since 0.8.6).** `volume factor = 10^(−dB_played / 20)`, the standard conversion from a level difference to a sound-pressure factor [2]. With `Loudness factor` 1 every dB of insulation is played as long as the real level at your ear (without walls) stays below the knee (85 dB(A)): footsteps, voices and cars follow real physics. Above the knee only 0.2 dB per real dB is played (soft knee, 10 dB wide). **Why:** a real gunshot is about 140 dB(A) at 1 m, the game's own close gunshot clips play like 93–96 dB(A) – the game mix already squeezes loud sounds by about this slope. The knee value 85 is chosen so the game's level range up to about 80 dB(A) is played 1:1; it was tested against 95 by ear. Example: a closed door (23 dB) takes about 9 dB off a rifle shot 80 m away, 60 dB of concrete still about 46 dB.
+- **Loudness curve (since 0.8.8).** `volume factor = 10^(−dB_played / 20)`, the standard conversion from a level difference to a sound-pressure factor [2]. With `Loudness factor` 1 every dB of insulation is played as long as the real level at your ear (without walls) stays below the knee (85 dB(A)): footsteps, voices and cars follow real physics. Above the knee only 0.2 dB per real dB is played (soft knee, 10 dB wide). **Why:** a real gunshot is about 140 dB(A) at 1 m, the game's own close gunshot clips play like 93–96 dB(A) – the game mix already squeezes loud sounds by about this slope. The knee value 85 is chosen so the game's level range up to about 80 dB(A) is played 1:1; it was tested against 95 by ear. Example: a closed door (23 dB) takes about 9 dB off a rifle shot 80 m away, 60 dB of concrete still about 46 dB.
 - **Explosions** use the slope of the game's own explosion distance curve instead (about 0.31).
 - **Distance of the close recording:** beyond the first blend distance of the weapon's sound bank (5 m), the drop over distance goes through the same curve, from a real level of 140 dB(A) at 1 m (suppressed 120 dB(A)). Unsuppressed rifle relative to 5 m: 55 m −4 dB, 400 m −8 dB (plain 1/r: −21 / −38 dB). These real levels are typical values, not measurements of particular weapons.
-- **Muffling (low-pass):** the band values (250 Hz / 1 kHz / 4 kHz) are turned into the one low-pass the game has per sound. Since 0.8.6 the fit assumes the game's real filter (measured: 24 dB per octave, Q 1). For loud sounds the muffling is squeezed by the same factor as the volume. The mapping is my own approximation, not a formula from the literature.
+- **Muffling (low-pass):** the band values (250 Hz / 1 kHz / 4 kHz) are turned into the one low-pass the game has per sound. Since 0.8.8 the fit assumes the game's real filter (measured: 24 dB per octave, Q 1). For loud sounds the muffling is squeezed by the same factor as the volume. The mapping is my own approximation, not a formula from the literature.
 - **All paths add up as energy:** through the wall, around edges (UTD diffraction, ported from Valve's Steam Audio, see `THIRD_PARTY_NOTICES.md`), over reflections and through the rooms – `10 lg Σ 10^(L/10)`, never above a clear line.
 
 ### 4. Doors and windows
 
-Since 0.8.6 a closed door or intact window is a **leaf of its own material and thickness** (the game's ballistic material of the leaf; thickness measured on its collider, panes from the game's own pane model), calculated with the same mass law and coincidence correction as walls, per band. Metal doors thicker than their group's `Solid up to` count as hollow doors of two 1.5 mm sheets. A **gap** around the leaf is a parallel opening: 0.5 % of the area for doors (an unsealed door then reaches at most about 23 dB; measured unsealed interior doors: R'w 15–20 dB), 0.1 % for windows (at most about 30 dB). The gap shares are assumptions fitted to typical measured values. Examples at 250 Hz / 1 kHz / 4 kHz (leaf only): wooden door 4 cm 21 / 31 / 49 dB, hollow steel door 28 / 40 / 52 dB, glass 6 mm 25 / 37 / 40 dB. Partly open doors and broken windows let the open part through.
+Since 0.8.8 a closed door or intact window is a **leaf of its own material and thickness** (the game's ballistic material of the leaf; thickness measured on its collider, panes from the game's own pane model), calculated with the same mass law and coincidence correction as walls, per band. Metal doors thicker than their group's `Solid up to` count as hollow doors of two 1.5 mm sheets. A **gap** around the leaf is a parallel opening: 0.5 % of the area for doors (an unsealed door then reaches at most about 23 dB; measured unsealed interior doors: R'w 15–20 dB), 0.1 % for windows (at most about 30 dB). The gap shares are assumptions fitted to typical measured values. Examples at 250 Hz / 1 kHz / 4 kHz (leaf only): wooden door 4 cm 21 / 31 / 49 dB, hollow steel door 28 / 40 / 52 dB, glass 6 mm 25 / 37 / 40 dB. Partly open doors and broken windows let the open part through.
 
 ### 5. Walls between rooms and bot hearing
 
@@ -367,7 +369,7 @@ The low/high weights per material that tilt the filter are **chosen by ear**. In
 ### 9. Rooms and reverb
 
 - **Room shape:** a room is the union of the game's room boxes; each part gets its own Meta XR control zone, so a zone no longer reaches into a neighbouring room.
-- **Absorption:** the game's baked room data treat every surface as α = 0.1. True Acoustics measures the wall materials and, since 0.8.6, the **mean free path through the room with random lines** (`4V/S`, Kuttruff [10]), so machines, crates, pipes and walkways count with their own surface. Open portals count with their real area (α = 1). α per material and band are **game data** (an unused material table that ships with EFT, 26 materials).
+- **Absorption:** the game's baked room data treat every surface as α = 0.1. True Acoustics measures the wall materials and, since 0.8.8, the **mean free path through the room with random lines** (`4V/S`, Kuttruff [10]), so machines, crates, pipes and walkways count with their own surface. Open portals count with their real area (α = 1). α per material and band are **game data** (an unused material table that ships with EFT, 26 materials).
 - **Reverb time** by Eyring's formula with the air term (ISO 354 [17], Eyring [11]); the **difference** to the game's baked value is sent to Meta as a control zone, the reverb level follows the reverb time (`+10·lg(T_new/T_base)`).
 - **Sound from other rooms:** the energy that leaks from the source room through openings or walls is split into a directed part (straight or around the edges of the openings) and a diffuse part (the source room's reverberant field, Kuttruff/Barron [10]). The game's reverb plays the diffuse part 30–50 dB too quietly (measured on Factory), so it is played with the dry sound. For short sounds only the part that arrives within 125 ms (LAFmax), for voices only the part within 50 ms (D50, ISO 3382-1 [18]) counts. These two limits describe how a listener hears a room, not a property of the room; they are the current solution, not the final one.
 

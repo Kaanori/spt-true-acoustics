@@ -15,7 +15,7 @@ using UnityEngine;
 namespace Materialklang
 {
     // =========================================================================================
-    //  0.8.6: Spielfehler in AudioSourceCulling an der Ursache behoben (Beleg + Regel in CullingKern)
+    //  0.8.8: Spielfehler in AudioSourceCulling an der Ursache behoben (Beleg + Regel in CullingKern)
     //
     //  Wer das Culling nutzt (EFT 4.1.6):
     //   - GameWorld.AudioSourceCulling: CameraManager.method_7 (aus SetCamera, einmal je Kamera = Raidstart) leert die Liste und

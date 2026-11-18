@@ -24,7 +24,7 @@ namespace Materialklang
     //      P/(2 pi r^2) weiter. A = aequivalente Absorptionsflaeche des Raums (Raumoberflaeche * alpha + offene Portalflaechen).
     //      Der Hall des Quellraums zaehlt nicht (den spielt das Spiel selbst ueber Meta XR).
     //   Bezug: Freifeld W/(4 pi d^2) in Direktlinie (die Entfernungskurve rechnet Unity/SEB). Daemmung = 10 lg(Bezug / Summe), >= 0.
-    //   Geschlossene Tueren/heile Fenster: 0.8.6 tau je Band aus dem Massengesetz des Blatts (Material + gemessene Dicke,
+    //   Geschlossene Tueren/heile Fenster: 0.8.8 tau je Band aus dem Massengesetz des Blatts (Material + gemessene Dicke,
     //   TuerKern.cs; bis 0.8.5 ein fester Anteil der Hoechstdaemmung je Typ mit Tiefpass-Abbildung). Portale ohne Blattmodell
     //   (Baender = false) behalten tau im Bezugsband und die Tiefpass-Abbildung. Beugung macht den Rest frequenzabhaengig
     //   (Tiefpass aus der Mehrdaempfung bei 4 kHz gegenueber der Bezugsfrequenz, 2-poliger Filter).
@@ -50,7 +50,7 @@ namespace Materialklang
         public double HalbX, HalbY;
         public double Offen;      // 0 = zu, 1 = ganz offen (Anteil der freien Flaeche)
         public double Tau;        // Energie-Transmissionsgrad des geschlossenen Teils (Tuerblatt, Glas) im Bezugsband
-        // 0.8.6 (Tuer-Massengesetz): Transmissionsgrad bei 1 kHz / 4 kHz aus dem Massengesetz des Blatts (TuerKern.cs).
+        // 0.8.8 (Tuer-Massengesetz): Transmissionsgrad bei 1 kHz / 4 kHz aus dem Massengesetz des Blatts (TuerKern.cs).
         // Baender = false: kein Blattmodell, alle Baender mit Tau (Tiefpass-Abbildung des Physik-Modus wie bis 0.8.5).
         public double TauMitte, TauHoch;
         public bool Baender;
@@ -65,13 +65,13 @@ namespace Materialklang
         public double Db, DbHoch;          // Daemmung bei Bezugs- und hoher Frequenz
         public double DbMitte;             // 0.8.5: Daemmung bei 1 kHz (Baender wie Stufe 1: Bezug / 1 kHz / 4 kHz)
         public double DbTuer;              // Anteil der geschlossenen Tueren/Fenster (Bezugsband)
-        public double DbTuerMitte, DbTuerHoch;   // 0.8.6: dasselbe bei 1 kHz / 4 kHz
-        public bool TuerBaender;           // 0.8.6: die Route hat geschlossene Blaetter, alle mit Baendern aus dem Massengesetz (dann keine Tiefpass-Abbildung)
+        public double DbTuerMitte, DbTuerHoch;   // 0.8.8: dasselbe bei 1 kHz / 4 kHz
+        public bool TuerBaender;           // 0.8.8: die Route hat geschlossene Blaetter, alle mit Baendern aus dem Massengesetz (dann keine Tiefpass-Abbildung)
         public double DbGeo, DbDiffus;     // die beiden Wege einzeln (Bezugsfrequenz)
         public double DbDiffusHoch;        // 0.8.5: Raeume-Weg bei der hohen Frequenz (Log)
         public double Laenge, Direkt;      // Weglaenge ueber die Portale, Direktlinie
-        public double DbAussen;            // 0.8.6: Abschirmung der Strecken im Freien (Bezugsband, schon in Db enthalten), 0 = keine/frei
-        public int AussenStrecken;         // 0.8.6: Zahl der Strecken im Freien, die abgeschirmt gerechnet wurden
+        public double DbAussen;            // 0.8.8: Abschirmung der Strecken im Freien (Bezugsband, schon in Db enthalten), 0 = keine/frei
+        public int AussenStrecken;         // 0.8.8: Zahl der Strecken im Freien, die abgeschirmt gerechnet wurden
         // raumecke (16.11.): Ecken innerhalb der Raeume (RaumEckeKern), ihre Beugung im Bezugsband / bei 1 kHz (dB, schon in Db), Zahl
         public double DbEcken, DbEckenMitte; public int Ecken;
         // tabellenneu (16.11.): voriger Wegpunkt vor dem Austritt (Ecke oder vorletzter Portalpunkt; IstNull = keiner) - fuer die Nahblende
@@ -257,7 +257,7 @@ namespace Materialklang
                 // Kap. 5; EN 12354-3 Gl. fuer den Innenpegel), mit Luftabsorption und Abstandsabfall nach Barron wie in den
                 // weiteren Raeumen. Vorher fehlte dieser Anteil (raumA[0] wurde nicht benutzt).
                 double r0 = Math.Max(V3.Abstand(quelle, punkte[0]), 0.5);
-                // 0.8.6: geschlossene Teile je Band mit ihrem Transmissionsgrad (Massengesetz des Blatts)
+                // 0.8.8: geschlossene Teile je Band mit ihrem Transmissionsgrad (Massengesetz des Blatts)
                 double q0 = QuellDiffus(p[0], t0, raumA, raumV, r0, m0), q1 = QuellDiffus(p[0], t1, raumA, raumV, r0, m1), q2 = QuellDiffus(p[0], t2, raumA, raumV, r0, m2);
                 // oeffnung (16.11.): Abstrahlung der letzten Oeffnung je Band (Kantenauffuellung haengt von f ab) -> st je Band
                 d0 = Kette(om * fq0 * t0 + q0, p, punkte, n, quelle, hoerer, raumA, raumV, m0, l0, 0, fRef, out double pl0, out double st0, out double sb0);
@@ -320,7 +320,7 @@ namespace Materialklang
             return e;
         }
 
-        /// <summary>0.8.6 Leistung: untere Schranke der Daemmung Route(...).Db (Bezugsband), ohne teure Funktionen ausser einem Log10.
+        /// <summary>0.8.8 Leistung: untere Schranke der Daemmung Route(...).Db (Bezugsband), ohne teure Funktionen ausser einem Log10.
         /// Jeder Faktor ist eine obere Schranke des Faktors in Route: Kantenbeugung Kurze-Anderson im Schatten (N >= 0)
         /// 5 + 20 lg(x / tanh x) >= 5 + 20 lg max(1, x), x^2 = 2 pi N, gedeckelt bei 20 dB; frei (N &lt; 0) >= 0 dB.
         /// Raumwinkel eines Rechtecks im Abstand w <= Flaeche / w^2 und <= 2 pi. Diffusfeld: aF = max(A + 4 m V, 1) >= max(A, 1),
@@ -381,7 +381,7 @@ namespace Materialklang
                         else inzident += leistung * StrahlOben(p[j], hoerer);
                     }
                     else if (letzte) inzident = leistung * StrahlOben(p[j], hoerer);   // oeffnung: im Freien dieselbe Abstrahlung wie im Raum
-                    else einfall = leistung * Math.Min(1.0, RaumwinkelOben(p[P(k + 1)], punkte[j]) / (2 * Math.PI));   // 0.8.6 wie Kette
+                    else einfall = leistung * Math.Min(1.0, RaumwinkelOben(p[P(k + 1)], punkte[j]) / (2 * Math.PI));   // 0.8.8 wie Kette
                 }
                 diffus = inzident;
             }
@@ -460,7 +460,7 @@ namespace Materialklang
             e.Sprache = k;
         }
 
-        /// <summary>0.8.6 Wegsuche (Livetest-Fix): nur der Raeume-Weg (diffus) einer Portalfolge im Band 'band' (0 = Bezug, 1 = 1 kHz,
+        /// <summary>0.8.8 Wegsuche (Livetest-Fix): nur der Raeume-Weg (diffus) einer Portalfolge im Band 'band' (0 = Bezug, 1 = 1 kHz,
         /// 2 = 4 kHz) - dieselbe Rechnung wie in Route (Raumwinkel der ersten Oeffnung + Diffusfeld des Quellraums, Kette ueber die
         /// Raeume, am Hoerer 4P/A bzw. P/(2 pi r^2) im Freien). m/luftDb aus LuftWerte. Ergebnis: Intensitaet am Hoerer (W = 1).</summary>
         public static double Diffus(V3 quelle, V3 hoerer, RaumPortal[] p, V3[] punkte, int n, double[] raumA, double[] raumV, int band, double m, double luftDb, double f = 0)
@@ -480,7 +480,7 @@ namespace Materialklang
             return i + Abstrahlung(n, 1.0, 0.0, om, qd, pl, st, 0.0, sb);
         }
 
-        /// <summary>0.8.6: Luftabsorption wie Luft (20 C / 50 %), ohne den gemeinsamen Zwischenspeicher (fuer andere Faeden).</summary>
+        /// <summary>0.8.8: Luftabsorption wie Luft (20 C / 50 %), ohne den gemeinsamen Zwischenspeicher (fuer andere Faeden).</summary>
         public static void LuftWerte(double f, out double m, out double db) { db = Iso9613.Alpha(f, 20, Iso9613.Bezugsdruck, 50); m = db / 4.3429; }
 
         /// <summary>Diffuse Kette ab der Leistung startP hinter Oeffnung 0 (W = 1). m = Luft-Energiedaempfung (1/m),
@@ -594,7 +594,7 @@ namespace Materialklang
                             double f, out double pLetzt, out double strahl, out double strahlBlatt)
         {
             pLetzt = 0; strahl = 0; strahlBlatt = 0;
-            // 0.8.6 (Meldung Streets 09.11.2026, Bot looted 42 m entfernt hinter Raumwegen, in der Tiefgarage hoerbar):
+            // 0.8.8 (Meldung Streets 09.11.2026, Bot looted 42 m entfernt hinter Raumwegen, in der Tiefgarage hoerbar):
             // einfall = Leistung, die auf die naechste Oeffnung trifft. Im Freien strahlt die Oeffnung k in den Halbraum, auf
             // Oeffnung k+1 trifft der Anteil Omega / 2 pi (Raumwinkel von Portalpunkt k aus, wie die Quelle vor Oeffnung 0 mit
             // Omega / 4 pi). Vorher I * S = P * S / (2 pi r^2): immer senkrechter Einfall und ohne Grenze - bei schraeg liegenden
@@ -633,7 +633,7 @@ namespace Materialklang
             return inzident;
         }
 
-        /// <summary>0.8.6: obere Schranke von Raumwinkel(p, q) ohne Winkelfunktionen: Omega = Int w / rho^3 dS &lt;= S * w / rho_min^3
+        /// <summary>0.8.8: obere Schranke von Raumwinkel(p, q) ohne Winkelfunktionen: Omega = Int w / rho^3 dS &lt;= S * w / rho_min^3
         /// (rho_min = Abstand von q zum Rechteck), hoechstens 2 pi.</summary>
         public static double RaumwinkelOben(in RaumPortal p, V3 q)
         {
@@ -802,7 +802,7 @@ namespace Materialklang
             }
         }
 
-        /// <summary>0.8.6: fuehrt der Mischer diese Route gerade (auch beim Ausblenden)? Dann wird sie immer exakt gerechnet.</summary>
+        /// <summary>0.8.8: fuehrt der Mischer diese Route gerade (auch beim Ausblenden)? Dann wird sie immer exakt gerechnet.</summary>
         public bool Fuehrt(ulong id) => Finde(id) != null;
 
         RoutenEintrag Finde(ulong id)
@@ -885,7 +885,7 @@ namespace Materialklang
             return e0 > 0;
         }
 
-        /// <summary>0.8.6 Richtung: wie Summe, der Austritt aber als energiegewichtetes Mittel der RICHTUNGEN vom Hoerer h zu den
+        /// <summary>0.8.8 Richtung: wie Summe, der Austritt aber als energiegewichtetes Mittel der RICHTUNGEN vom Hoerer h zu den
         /// Austrittspunkten (Intensitaetsvektor), nicht der Punkte selbst. Das Mittel zweier Punkte links und rechts liegt sonst
         /// zwischen ihnen - vor oder hinter dem Hoerer, wo keine Oeffnung ist (Log 09.11.: 3 % der Klaenge > 90 Grad neben der
         /// lautesten Oeffnung). austritt = h + mittlere Richtung * mittlerer Abstand; buendel = |Summe w e u| / Summe w e (1 = eine
@@ -1022,8 +1022,8 @@ namespace Materialklang
     // Loesung: gestaucht wird nur der Teil der Daemmung, bis zu dem die Quelle real noch ueber dem Grundgeraeusch liegt
     // ("Knie"); jedes dB darueber zaehlt voll, und ueber 10 dB unter dem Grundgeraeusch (Mithoerschwelle) blendet sie ganz aus.
     //   Knie = L_Quelle(1 m) - 20 lg(d) - L_Grund (>= 0)
-    //   D_Spiel = Lautheit * min(D, Knie) + max(0, D - Knie) + Verdeckung(D - Knie)   (0.8.6; bis 0.8.5: Max. insulation * smoothstep((D - Knie) / 10 dB))
-    // Lautes (Schuesse, Explosionen, Einschlaege) hat kein Knie (Tabelle NaN): keine Bandrechnung; die Stauchung macht seit 0.8.6 die
+    //   D_Spiel = Lautheit * min(D, Knie) + max(0, D - Knie) + Verdeckung(D - Knie)   (0.8.8; bis 0.8.5: Max. insulation * smoothstep((D - Knie) / 10 dB))
+    // Lautes (Schuesse, Explosionen, Einschlaege) hat kein Knie (Tabelle NaN): keine Bandrechnung; die Stauchung macht seit 0.8.8 die
     // Kennlinie (Kennlinie/Gestaucht unten) aus dem realen Pegel, nicht mehr der Lautheitsfaktor allein.
     // Quellpegel (Schaetzwerte, dB(A) in 1 m): Stimme 72 = "laut" nach ISO 9921:2003 Tab. 1 (normal 60, angehoben 66, laut 72,
     // sehr laut 78; Bots rufen meist); Schritte/Ausruestung 65 (Gehen mit Stiefeln auf hartem Boden ~55-70 dB(A), Messwerte der
@@ -1080,7 +1080,7 @@ namespace Materialklang
         }
 
         // ------------------------------------------------------------------------------------------
-        // 0.8.6 Kennlinie (Psychoakustik-Pruefung 10.11.2026, E1; ersetzt den nie gebauten "Fix 2"). Ursache: Physik.LautstaerkeKern
+        // 0.8.8 Kennlinie (Psychoakustik-Pruefung 10.11.2026, E1; ersetzt den nie gebauten "Fix 2"). Ursache: Physik.LautstaerkeKern
         // rechnete db = Max. insulation * Wertung * Lautheit - die Daemmung im echten dB-Mass, die Entfernung aber macht SEBs gestauchte
         // Kurve. Ein Schuss liegt real 70-75 dB ueber einem Schritt, im Spiel 20-30 dB. Eine Tuer, die real 23 dB nimmt, nahm dem Schuss
         // im Spiel ebenfalls 23 dB - gemessen am gestauchten Spielpegel viel zu viel ("ferne Gefechte unhoerbar", Kaans Uebergang
@@ -1187,7 +1187,7 @@ namespace Materialklang
         }
 
         // ------------------------------------------------------------------------------------------
-        // 0.8.6 - Verdeckung ohne Klippe (Meldung Streets 09.11.2026 20:02 "Taxi hat einen harten Cut - genau wo ich den Marker setzte,
+        // 0.8.8 - Verdeckung ohne Klippe (Meldung Streets 09.11.2026 20:02 "Taxi hat einen harten Cut - genau wo ich den Marker setzte,
         // hoert es auf"). Bisher: Zusatz = Max. insulation * smoothstep(unter / 10 dB), also 60 dB Mehrdaempfung auf 10 dB - im Steilsten
         // 9 dB Lautstaerke je dB Pegel. Im Log 20:02:47 -> 20:02:48 (1,5 m gegangen): 1-kHz-Band +2,9 -> +7,8 dB ueber der
         // Mithoerschwelle, Lautstaerke -55,4 -> -10,5 dB. Physikalisch falsch: ein Signal knapp unter dem Grundgeraeusch wird nicht
@@ -1237,7 +1237,7 @@ namespace Materialklang
         // Klang selbst: der Filter nimmt die Baender weg, die Lautstaerke haelt das lauteste. (Eine Energiesumme in der Lautstaerke
         // UND der Tiefpass wuerden die Hoehen doppelt abziehen.) Ohne Zusatz in allen Baendern = exakt das Verhalten davor.
         // Stumm erst, wenn alle Baender 10 dB unter ihrem Grundgeraeusch liegen. Alles ist stetig in D, Abstand und Grundgeraeusch
-        // (0.8.6: Verdeckung mit hoechstens 2 dB je dB), es gibt keine Schwelle, die flackern koennte - Hysterese ist nicht noetig.
+        // (0.8.8: Verdeckung mit hoechstens 2 dB je dB), es gibt keine Schwelle, die flackern koennte - Hysterese ist nicht noetig.
         // ------------------------------------------------------------------------------------------
 
         public const int NB = 3;
@@ -1344,7 +1344,7 @@ namespace Materialklang
         /// Hoerbarkeit je Band. d0 = reale Daemmung im Bezugsband (dB), m[b] = reale Mehrdaemmung des Bands b gegenueber dem
         /// Bezugsband, neigung[b] = Mehrdaempfung, die das Spiel ohne Hoerbarkeit ueber den Tiefpass anwendet (m[0] = neigung[0] = 0).
         /// false = Gruppe ohne Rechnung (laut) oder keine Daemmung: dann gilt die Stauchung allein.
-        /// kennKnie/kennSteigung: Kennlinie (0.8.6) fuer den Bezugsband-Abzug; Standard aus (NaN) = lautheit * d0 wie bis 0.8.6.
+        /// kennKnie/kennSteigung: Kennlinie (0.8.8) fuer den Bezugsband-Abzug; Standard aus (NaN) = lautheit * d0 wie bis 0.8.8.
         /// </summary>
         public static bool Rechnen(int typ, double abstand, double lGrund, double d0, double[] m, double[] neigung,
                                    double lautheit, double maxDb, Baender r, double kennKnie = double.NaN, double kennSteigung = 1.0, double pegelKorr = 0,
@@ -1358,7 +1358,7 @@ namespace Materialklang
             var n = grund ?? Grund(lGrund);
             double ab = 20 * Math.Log10(Math.Max(abstand, 1.0));
             d0 = Math.Max(0, d0);
-            // 0.8.6 Kennlinie: Bezugsband-Abzug im gespielten Mass (unter dem Knie exakt lautheit * d0 wie bisher; leise Gruppen liegen
+            // 0.8.8 Kennlinie: Bezugsband-Abzug im gespielten Mass (unter dem Knie exakt lautheit * d0 wie bisher; leise Gruppen liegen
             // mit hoechstens 75 dB(A) in 1 m immer darunter)
             double a0 = lautheit * Kompression(FreiPegel(QuellPegel[typ] + pegelKorr, abstand), d0, kennKnie, kennSteigung);
             r.Lautstaerke = double.MaxValue; r.ZusatzMax = 0;

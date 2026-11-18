@@ -16,7 +16,7 @@ namespace Materialklang
     // Das Spiel nutzt Meta-XR-Audio mit eingebackenen Raumdaten (.xrageo), in denen ALLE Materialien
     // gleich sind (Absorption 0.1). Der Hall kennt also keine Materialien. Wir messen darum beim
     // Raidstart je Innenraum, woraus die Waende bestehen (Strahlen + BallisticCollider), rechnen mit
-    // Eyring (tankhall; bis 0.8.6 Sabine) die Abweichung zu 0.1 aus und legen pro Raum eine offizielle Meta-"Control Zone" an,
+    // Eyring (tankhall; bis 0.8.8 Sabine) die Abweichung zu 0.1 aus und legen pro Raum eine offizielle Meta-"Control Zone" an,
     // die RT60 (Sekunden, additiv) und Hallpegel (dB, additiv) im Raum verschiebt.
     internal static partial class HallZonen
     {
@@ -161,7 +161,7 @@ namespace Materialklang
             // was viele Zonen je Hall-Berechnung kosten, ist nicht gemessen. Offline (review-20261110/hallzone/zaehlen): Factory 710 Zonen
             // (114 Raeume), Reserve hoechstens 1806 (514 Raeume) -> Standard 2000, damit auf allen bekannten Karten kein Raum leer ausgeht.
             MaxZonenAlt = cfg.Bind(sek, "Max zones", 400,
-                new ConfigDescription("No longer used (since 0.8.6): see 'Max zone boxes'.", new AcceptableValueRange<int>(0, 2000)));
+                new ConfigDescription("No longer used (since 0.8.8): see 'Max zone boxes'.", new AcceptableValueRange<int>(0, 2000)));
             MaxZonen = cfg.Bind(sek, "Max zone boxes", 2000,
                 new ConfigDescription("Maximum number of reverb zones per raid. A room gets one zone per part of its shape (only its own volume, no zone reaches into another room). If the limit is reached, the rooms whose reverb differs most from the base game (times their volume) come first; the log says how many rooms got none. Takes effect immediately.", new AcceptableValueRange<int>(0, 4000)));
             PegelAusZeit = cfg.Bind(sek, "Reverb level follows reverb time", true,
@@ -169,9 +169,9 @@ namespace Materialklang
             // tankhall: beide Schluessel bleiben (cfg-Kompatibilitaet), wirken aber nicht mehr. Ein Raum ist die Vereinigung ALLER seiner
             // Boxen (eine Zone ueber seine Huelle); die Oeffnungen zaehlen mit ihrer echten Flaeche (alpha 1) statt einer Untergrenze.
             NurGroessteBox = cfg.Bind(sek, "Only largest box per room", true,
-                "No longer used (since 0.8.6): a room is the union of all its boxes and gets one zone over its hull.");
+                "No longer used (since 0.8.8): a room is the union of all its boxes and gets one zone over its hull.");
             AlphaMin = cfg.Bind(sek, "Min. absorption", 0.08f,
-                new ConfigDescription("No longer used (since 0.8.6): open portals of the room now count with their real area (absorption 1), furniture and clutter are seen by the rays; a floor would make hard rooms (steel tanks, bare concrete) too soft.", new AcceptableValueRange<float>(0.01f, 0.1f)));
+                new ConfigDescription("No longer used (since 0.8.8): open portals of the room now count with their real area (absorption 1), furniture and clutter are seen by the rays; a floor would make hard rooms (steel tanks, bare concrete) too soft.", new AcceptableValueRange<float>(0.01f, 0.1f)));
             SehnenBinden(cfg, sek);   // hallabsorption (17.11.)
             Diagnose = cfg.Bind(sek, "Diagnostics", true,
                 "Writes to the BepInEx log at raid start: zone count, measuring time and the 5 most extreme rooms (name, main material, change of reverb time at 1 kHz).");

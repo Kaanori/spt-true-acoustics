@@ -35,7 +35,7 @@ namespace Materialklang
         public int[] Vorn = new int[0], Hinten = new int[0];   // Raumindex oder -1
         // je Bild: Schliessung des Spiels (PortalClosureLevel)
         public float[] Schliessung = new float[0];
-        // 0.8.6 (Tuer-Massengesetz): Daemmung des geschlossenen Blatts je Band (3 je Portal: Bezug / 1 kHz / 4 kHz, TuerKern.cs),
+        // 0.8.8 (Tuer-Massengesetz): Daemmung des geschlossenen Blatts je Band (3 je Portal: Bezug / 1 kHz / 4 kHz, TuerKern.cs),
         // NaN = kein Blattmodell (Wert aus der Schliessung des Jobs wie bis 0.8.5). Spiel: einmal je Bild gefuellt.
         public double[] BlattDb = new double[0];
         /// <summary>Zaehlt jede Aenderung an BlattDb (Wiederverwendung gespeicherter Ergebnisse nur bei gleichem Stand).</summary>
@@ -47,7 +47,7 @@ namespace Materialklang
         public int[] JGeoKey = new int[0];
         int[] jStempel = new int[0];
         double[] zZu = new double[0], zTau = new double[0], zTauM = new double[0], zTauH = new double[0]; bool[] zBand = new bool[0];
-        int[] zStempel = new int[0];   // 0.8.6: Portalzustand je Rechnung
+        int[] zStempel = new int[0];   // 0.8.8: Portalzustand je Rechnung
         int rechnung = 1;
 
         // ---- je Raum (dichter Index), statisch je Raid
@@ -250,7 +250,7 @@ namespace Materialklang
 
         public bool JobGeladen(int pi) => pi < jStempel.Length && jStempel[pi] == rechnung;
 
-        /// <summary>0.8.6: Blatt-Daemmung eines Portals je Band setzen (NaN = kein Blattmodell); zaehlt BlattStand nur bei Aenderung.</summary>
+        /// <summary>0.8.8: Blatt-Daemmung eines Portals je Band setzen (NaN = kein Blattmodell); zaehlt BlattStand nur bei Aenderung.</summary>
         public void BlattSetzen(int pi, double d0, double d1, double d2)
         {
             if (pi < 0 || 3 * pi + 2 >= BlattDb.Length) return;
@@ -262,11 +262,11 @@ namespace Materialklang
 
         static bool Gleich(double a, double b) => a == b || (double.IsNaN(a) && double.IsNaN(b));
 
-        /// <summary>0.8.6: Daemmung des geschlossenen Blatts im Band b (NaN = kein Blattmodell).</summary>
+        /// <summary>0.8.8: Daemmung des geschlossenen Blatts im Band b (NaN = kein Blattmodell).</summary>
         public double Blatt(int pi, int b) => Obj(pi) && 3 * pi + b < BlattDb.Length ? BlattDb[3 * pi + b] : double.NaN;
 
         /// <summary>
-        /// 0.8.6: Baender einer Route (Bezug / 1 kHz / 4 kHz). Beugung und Raeume je Band physikalisch (Route). Geschlossene Tueren/
+        /// 0.8.8: Baender einer Route (Bezug / 1 kHz / 4 kHz). Beugung und Raeume je Band physikalisch (Route). Geschlossene Tueren/
         /// Fenster: mit Blattmodell stecken ihre Baender schon in DbMitte/DbHoch (Massengesetz je Band); ohne (TuerBaender = false)
         /// zusaetzlich die Tiefpass-Abbildung des Physik-Modus wie bis 0.8.5.
         /// </summary>
@@ -360,7 +360,7 @@ namespace Materialklang
 
         // ---------------------------------------------------------------- Routen
 
-        /// <summary>0.8.6 (Meldung Ground Zero 09.11.2026 21:34 MARK 6/7, V-Ex-Taxi 155 m): Abschirmung einer Strecke im Freien
+        /// <summary>0.8.8 (Meldung Ground Zero 09.11.2026 21:34 MARK 6/7, V-Ex-Taxi 155 m): Abschirmung einer Strecke im Freien
         /// (ISO 9613-2 ueber das Hoehenprofil, Spielteil: Ersatzweg.Profil). a/b = Endpunkte, vonPortal/bisPortal = Portalindex des
         /// Endpunkts oder -1 (Quelle/Hoerer) - Schluessel fuer den Cache des Spielteils.</summary>
         public interface IAussenSchirm { bool Strecke(V3 a, V3 b, int vonPortal, int bisPortal, out Hindernis h); }
@@ -378,9 +378,9 @@ namespace Materialklang
             public double FRef, FHoch;
             public float Fit1, Fit2;
             public int RoutenGesamt;          // Laenge der Routenliste (Schluessel)
-            public int RangN;                 // 0.8.6: Mischer-Einstellung (weicher Rang N, 0 = alle voll) fuer das Kappen
-            public double Breite;             // 0.8.6: Rang-Breite (dB), 0 = harte Auswahl
-            public IAussenSchirm Schirm;      // 0.8.6: Strecken im Freien abschirmen (null = wie bisher: Sichtlinie im Freien angenommen)
+            public int RangN;                 // 0.8.8: Mischer-Einstellung (weicher Rang N, 0 = alle voll) fuer das Kappen
+            public double Breite;             // 0.8.8: Rang-Breite (dB), 0 = harte Auswahl
+            public IAussenSchirm Schirm;      // 0.8.8: Strecken im Freien abschirmen (null = wie bisher: Sichtlinie im Freien angenommen)
         }
 
         // Routen in Job-Reihenfolge: Start in RIdx, Anzahl (-1 = ungueltig, wie 'continue' im Spielteil)
@@ -391,7 +391,7 @@ namespace Materialklang
         readonly V3[] pkt = new V3[MaxPortale], pktJob = new V3[MaxPortale];
         readonly double[] raumA = new double[MaxPortale + 1], raumV = new double[MaxPortale + 1], beug = new double[MaxPortale], umweg = new double[MaxPortale];
         readonly int[] idx = new int[MaxPortale], geo = new int[MaxPortale], raumIdx = new int[MaxPortale + 1];
-        readonly bool[] raumDraussen = new bool[MaxPortale + 1];   // 0.8.6: Raum k (vor Portal k) im Freien
+        readonly bool[] raumDraussen = new bool[MaxPortale + 1];   // 0.8.8: Raum k (vor Portal k) im Freien
 
         // Lauteste Route (Klang-Log)
         public RaumwegErgebnis Best;
@@ -402,7 +402,7 @@ namespace Materialklang
         public readonly double[] BestBeug = new double[MaxPortale], BestUm = new double[MaxPortale], BestOffen = new double[MaxPortale], BestTauDb = new double[MaxPortale];
 
         /// <summary>Alle Routen [0, anzahl) rechnen und als Kandidaten in den Mischer geben (mix.Beginn() inklusive).
-        /// logDetails = lauteste Route fuer das Klang-Log merken (0.8.6: auch dann mit Wiederverwendung, die Details liegen im
+        /// logDetails = lauteste Route fuer das Klang-Log merken (0.8.8: auch dann mit Wiederverwendung, die Details liegen im
         /// Eintrag). routen = exakt gerechnete Kandidaten. Rueckgabe: mindestens eine gueltige Route.</summary>
         public bool Rechne(in Eingabe ein, int anzahl, RoutenMischer mix, bool logDetails, out int routen, out bool treffer)
         {
@@ -445,7 +445,7 @@ namespace Materialklang
             mix.Beginn();
             float fit1 = ein.Fit1, fit2 = ein.Fit2;
 
-            // 0.8.6 Leistung (Ground Zero 09.11. 15:13-15:16: Raumpaare mit bis zu 2539 Routen, je Rechnung bis 20 ms): der Mischer
+            // 0.8.8 Leistung (Ground Zero 09.11. 15:13-15:16: Raumpaare mit bis zu 2539 Routen, je Rechnung bis 20 ms): der Mischer
             // gibt einer Route nur Gewicht, wenn sie unter den N+1 lautesten liegt oder hoechstens Breite/2 unter der Mitte r zwischen
             // der N-ten und (N+1)-ten (RoutenMischer.Gewichte; harte Auswahl: unter den N lautesten). Jede andere Route hat Gewicht 0
             // und aendert weder r noch die Raenge der gewichteten. Eine Route, deren untere Schranke der Daemmung schon schlechter ist
@@ -492,7 +492,7 @@ namespace Materialklang
             return hat;
         }
 
-        // 0.8.6: Portaldaten einer Route in Job-Richtung laden (rp, pktJob, idx, geo, raumA, raumV, raumIdx); merken = Zustand fuer
+        // 0.8.8: Portaldaten einer Route in Job-Richtung laden (rp, pktJob, idx, geo, raumA, raumV, raumIdx); merken = Zustand fuer
         // die Wiederverwendung eintragen. Rueckgabe: Zahl der Portale (0 = Route ungueltig).
         int Vorbereiten(in Eingabe ein, int r, Eintrag merken)
         {
@@ -512,7 +512,7 @@ namespace Materialklang
                 V3 punkt = RaumwegKern.PortalPunkt(p, eintritt, b);
                 if (punkt.IstNull) continue;
                 // Zustand: offener Anteil aus der Schliessung des Spiels, geschlossener Teil mit dem Wert der Mod (Abschnitt 4).
-                // 0.8.6: je Portal einmal je Rechnung (haengt nur vom Portal ab, nicht von der Route)
+                // 0.8.8: je Portal einmal je Rechnung (haengt nur vom Portal ab, nicht von der Route)
                 float jz = JZu[pi];
                 ZustandLaden(pi, dyn);
                 double zu = zZu[pi];
@@ -522,7 +522,7 @@ namespace Materialklang
                 // Raum hinter dem Portal (in Job-Richtung)
                 raumA[m + 1] = RaumNach(pi, ref vorRaum, ref vorDraussen, alpha, out raumV[m + 1], out raumIdx[m + 1]);
                 raumDraussen[m + 1] = vorDraussen;
-                // 0.8.6: je Portal nur einmal je Rechnung (bisher lineare Suche im Eintrag je Portal jeder Route: bei 2500 Routen
+                // 0.8.8: je Portal nur einmal je Rechnung (bisher lineare Suche im Eintrag je Portal jeder Route: bei 2500 Routen
                 // ueber Hunderte Portale quadratisch)
                 if (merken != null && pMerk[pi] != merkNr) { pMerk[pi] = merkNr; merken.PortalMerken(pi, zu, jz); }
                 eintritt = punkt; m++;
@@ -547,7 +547,7 @@ namespace Materialklang
             rMerk[raum] = merkNr; merken.RaumMerken(raum, a);
         }
 
-        // ---------------------------------------------------------------- 0.8.6 Kappen
+        // ---------------------------------------------------------------- 0.8.8 Kappen
 
         // Ergebnisse je Route (Index wie im Job), damit der Mischer sie in Job-Reihenfolge bekommt
         double[] kD0 = new double[0], kD1 = new double[0], kD2 = new double[0];
@@ -640,7 +640,7 @@ namespace Materialklang
         bool bestHat;
         int kp;
 
-        /// <summary>0.8.6 (Meldung Ground Zero 09.11.2026 21:34 MARK 6/7): Strecken einer Route im Freien abschirmen.
+        /// <summary>0.8.8 (Meldung Ground Zero 09.11.2026 21:34 MARK 6/7): Strecken einer Route im Freien abschirmen.
         /// Ursache: RaumwegKern.Route rechnet jeden Abschnitt innerhalb eines Raums als freie Sichtlinie - in einem Innenraum stimmt
         /// das, "draussen" ist aber ein Raum ueber die ganze Karte mit Gebaeuden darin. Beleg (Log 21:34:06.814): V-Ex-Taxi 155 m,
         /// Hoerer im Innenraum (163 m2/883 m3), Route Quelle -> AudioPortal#82 (Static Open, 3622 m2, draussen -> draussen) ->
@@ -675,7 +675,7 @@ namespace Materialklang
             e.DbAussen = a0; e.AussenStrecken = strecken;
         }
 
-        /// <summary>0.8.6: mit Abschirmung der Strecken im Freien zaehlen Portale zwischen zwei Raeumen im Freien nicht mehr. Das Spiel
+        /// <summary>0.8.8: mit Abschirmung der Strecken im Freien zaehlen Portale zwischen zwei Raeumen im Freien nicht mehr. Das Spiel
         /// teilt "draussen" in Zonen (Static-Open-Portale bis 3622 m2, Ground Zero); eine Route, die nur andere solche Zonengrenzen
         /// kreuzt, ist derselbe Schallweg (Quelle -> ueber die Hindernisse -> Oeffnung des Innenraums). Ohne Kuerzen zaehlte jede
         /// Zonenfolge als eigener Weg mit fast gleichem Pegel und der Mischer summierte sie (Offline-Test: 11 Zonengrenzen x 2 offene
@@ -731,7 +731,7 @@ namespace Materialklang
             if (!e.Gueltig) { rArt[r] = 0; return; }
             Baender(in e, dyn, ein.TiefpassMin, fRef, ein.Fit1, ein.Fit2, out kD0[r], out kD1[r], out kD2[r]);
             Schirmen(in ein, m, quelle, hoerer, ref e, ref kD0[r], ref kD1[r], ref kD2[r]);
-            TopDazu(e.Db, ein.RangN);   // 0.8.6: mit Abschirmung (die Schranken UntereDb/GrobDb bleiben untere Schranken)
+            TopDazu(e.Db, ein.RangN);   // 0.8.8: mit Abschirmung (die Schranken UntereDb/GrobDb bleiben untere Schranken)
             kAus[r] = aus; kErg[r] = e;
             int n = Math.Min(m, 16);
             if (kp + n > kPortale.Length) Array.Resize(ref kPortale, Math.Max(kPortale.Length * 2, kp + n));
@@ -750,7 +750,7 @@ namespace Materialklang
             }
         }
 
-        // ---------------------------------------------------------------- 0.8.6 Kappen: Daten je Raumpaar
+        // ---------------------------------------------------------------- 0.8.8 Kappen: Daten je Raumpaar
 
         /// <summary>Was an den Routen eines Raumpaars fest ist (Portalfolgen, Raeume dahinter, Routen-IDs, Mindestabstaende der
         /// Portalmitten). Gilt, solange Routenliste und Raumnetz gleich sind (Pruefsumme ueber die Portalfolgen).</summary>
@@ -881,7 +881,7 @@ namespace Materialklang
             double b0 = Blatt(pi, 0);
             if (!double.IsNaN(b0))
             {
-                // 0.8.6: geschlossener Teil = Tuerblatt/Scheibe nach dem Massengesetz je Band (TuerKern.cs). Der offene Anteil kommt
+                // 0.8.8: geschlossener Teil = Tuerblatt/Scheibe nach dem Massengesetz je Band (TuerKern.cs). Der offene Anteil kommt
                 // weiter aus der Schliessung des Spiels (Oeffnungswinkel, zerbrochene Scheiben).
                 // 10.11. (klangfarbe): Blatt je Band ungekappt (die Fuge begrenzt es ohnehin, TuerKern.MitFuge)
                 double g = WegeKern.BandGrenzeDb;
@@ -889,7 +889,7 @@ namespace Materialklang
                 zTau[pi] = Math.Pow(10, -t0 / 10); zTauM[pi] = Math.Pow(10, -t1 / 10); zTauH[pi] = Math.Pow(10, -t2 / 10); zBand[pi] = true;
                 return;
             }
-            // 0.8.6 Tuerfuge-Fix: ohne Blattmodell der Wert der Schliessung als Blatt, aber mit der Tuerfuge parallel (TuerKern.OhneBlattDb) -
+            // 0.8.8 Tuerfuge-Fix: ohne Blattmodell der Wert der Schliessung als Blatt, aber mit der Tuerfuge parallel (TuerKern.OhneBlattDb) -
             // vorher fugenlos bis Max. insulation (Factory Tor #209: 45 dB statt hoechstens 23 dB)
             double tlDb = z0 > 1e-3 ? TuerKern.OhneBlattDb(jz / z0 * JWand[pi] * dyn, dyn) : 0.0;
             zTau[pi] = zTauM[pi] = zTauH[pi] = Math.Pow(10, -tlDb / 10); zBand[pi] = false;
@@ -935,7 +935,7 @@ namespace Materialklang
             double a0 = ATrue(0);
             if (a0 > 0) leistung += fl0 * t0 / Math.Max(a0, RaumwegKern.MinFlaecheA);
             double inzident = 0;
-            bool draussenVor = false;   // 0.8.6: inzident ist die Leistung auf die naechste Oeffnung (Freiraum-Sprung)
+            bool draussenVor = false;   // 0.8.8: inzident ist die Leistung auf die naechste Oeffnung (Freiraum-Sprung)
             for (int k = 0; k < n; k++)
             {
                 int jk = J(k), pi = st.Pi[s + jk];
@@ -957,7 +957,7 @@ namespace Materialklang
                 }
                 else
                 {
-                    // 0.8.6 wie RaumwegKern.Kette: Anteil Omega / 2 pi <= S / (2 pi Seg^2), hoechstens 1 (hier schon als Leistungsanteil)
+                    // 0.8.8 wie RaumwegKern.Kette: Anteil Omega / 2 pi <= S / (2 pi Seg^2), hoechstens 1 (hier schon als Leistungsanteil)
                     ref RaumPortal gn = ref JGeo[st.Pi[s + J(k + 1)]];
                     double sg = st.Seg[s + Math.Min(jk, J(k + 1))];
                     double fl = 4.0 * gn.HalbX * gn.HalbY;
@@ -972,7 +972,7 @@ namespace Materialklang
 
         static double Clamp01d(double x) => x < 0 ? 0 : (x > 1 ? 1 : x);
 
-        // 0.8.6 Kappen: die N+1 kleinsten Daemmungen der exakt gerechneten Routen (aufsteigend)
+        // 0.8.8 Kappen: die N+1 kleinsten Daemmungen der exakt gerechneten Routen (aufsteigend)
         double[] untenDb = new double[0]; byte[] rArt = new byte[0];   // 0 = ungueltig/doppelt, 1 = offen, 2 = Saat (gerechnet)
         readonly int[] saatIdx = new int[4 * (MaxRangN + 1) + 64];
         readonly double[] top = new double[MaxRangN + 1];
@@ -1025,9 +1025,9 @@ namespace Materialklang
             public int RN;
             public bool Hat, Fertig;
             public int Routen;
-            // 0.8.6: lauteste Route fuers Klang-Log (Wiederverwendung auch bei eingeschaltetem Klang-Log)
+            // 0.8.8: lauteste Route fuers Klang-Log (Wiederverwendung auch bei eingeschaltetem Klang-Log)
             public bool MitBest;
-            public int BlattStand;   // 0.8.6: Stand der Blatt-Daemmungen bei der Rechnung
+            public int BlattStand;   // 0.8.8: Stand der Blatt-Daemmungen bei der Rechnung
             RaumwegErgebnis bErg; int bN, bRoute; double bOmega, bR1; V3 bAus, bVorAus; int bEcken; double bEckDb;
             readonly int[] bIdx = new int[MaxPortale];
             readonly double[] bBeug = new double[MaxPortale], bUm = new double[MaxPortale], bOffen = new double[MaxPortale], bTau = new double[MaxPortale];
@@ -1076,7 +1076,7 @@ namespace Materialklang
                 kp += n;
             }
 
-            public void PortalMerken(int pi, double zu, float job)   // doppelt: verhindert der Stempel pMerk (0.8.6)
+            public void PortalMerken(int pi, double zu, float job)   // doppelt: verhindert der Stempel pMerk (0.8.8)
             {
                 if (PN == PPi.Length) { Array.Resize(ref PPi, PN * 2); Array.Resize(ref PZu, PN * 2); Array.Resize(ref PJob, PN * 2); }
                 PPi[PN] = pi; PZu[PN] = zu; PJob[PN] = job; PN++;
@@ -1084,7 +1084,7 @@ namespace Materialklang
 
             public void RaumMerken(int raum, double a)
             {
-                if (raum < 0) return;   // doppelt: verhindert der Stempel in RaumwegNetz.RaumMerken (0.8.6)
+                if (raum < 0) return;   // doppelt: verhindert der Stempel in RaumwegNetz.RaumMerken (0.8.8)
                 if (RN == RIdx.Length) { Array.Resize(ref RIdx, RN * 2); Array.Resize(ref RA, RN * 2); }
                 RIdx[RN] = raum; RA[RN] = a; RN++;
             }

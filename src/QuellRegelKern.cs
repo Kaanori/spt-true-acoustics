@@ -14,7 +14,7 @@ namespace Materialklang
     //   Ambient  = BaseAmbientSoundPlayer (Abschnitt 15, ohne Okklusion),
     //   Occluded = SourceOccluder -> SimpleSource im Okklusionssystem (Abschnitt 16, mit Waenden/Raeumen/Luft von True Acoustics),
     //   Plain    = rohe Szenen-AudioSource ohne steuerndes Skript (neu, ohne Okklusion: Feuer, Fackeln, Generator Streets ...).
-    // Regel fuer alle drei: bis zum Bezugsabstand die Spielkurve (0.8.6, UmgebungKern.Bezugsabstand; bis dahin r0), danach das
+    // Regel fuer alle drei: bis zum Bezugsabstand die Spielkurve (0.8.8, UmgebungKern.Bezugsabstand; bis dahin r0), danach das
     // Abstandsgesetz der Quellart (1/r bzw. Flaeche), Reichweite = alt x Faktor, gedeckelt nach Klasse, weicher Auslauf
     // (UmgebungKern.Bauen). Klasse aus dem Namen von Quelle/Eltern/Grosseltern/Clip:
     //   Laut   (Signale, Abschnitt 16-Stichwoerter)            Faktor 15, hoechstens 300 m
@@ -132,7 +132,7 @@ namespace Materialklang
         public static bool FahrzeugZeile(double d, double dLetzt, double sekSeit, double reichweite)
             => d <= reichweite * 1.25 && (dLetzt < 0 || Math.Abs(d - dLetzt) >= 2.0 || sekSeit >= 10.0);
 
-        /// <summary>0.8.6: wie oben, zusaetzlich sofort, wenn sich der Zustand der Quelle geaendert hat (spielt / spielt nicht / aus).</summary>
+        /// <summary>0.8.8: wie oben, zusaetzlich sofort, wenn sich der Zustand der Quelle geaendert hat (spielt / spielt nicht / aus).</summary>
         public static bool FahrzeugZeile(double d, double dLetzt, double sekSeit, double reichweite, bool zustandNeu)
             => d <= reichweite * 1.25 && (zustandNeu || dLetzt < 0 || Math.Abs(d - dLetzt) >= 2.0 || sekSeit >= 10.0);
 
@@ -144,7 +144,7 @@ namespace Materialklang
             => z == 0 ? "playing" : z == 1 ? "NOT PLAYING - object inactive (V-Ex gone / not present)" : z == 2 ? "NOT PLAYING - source disabled (game culling: beyond range)"
              : "NOT PLAYING - stopped (active, enabled, but no sound)";
 
-        // ---- 0.8.6: stumme Leerlauf-Schleifen (Meldung Ground Zero 09.11.2026 04:04, MARK 2 am V-Ex-Taxi) ----
+        // ---- 0.8.8: stumme Leerlauf-Schleifen (Meldung Ground Zero 09.11.2026 04:04, MARK 2 am V-Ex-Taxi) ----
         // Ursache (EFT 4.1.6, Assembly-CSharp; Szenen level505/509/514; Logs 09.11.), behoben in CullingFix/CullingKern:
         //  1. LocalGame ruft beim Raidstart AudioUtils.ResetAudioBuffer -> AudioSettings.Reset; das haelt die Quellen an,
         //     playOnAwake-Schleifen starten nicht von selbst neu.

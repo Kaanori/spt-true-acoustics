@@ -40,12 +40,12 @@ namespace Materialklang
         {
             const string s = "0. Physics Mode (real values)";
             BehaelterAn = c.Bind(s, "Occlusion range follows the playing sound", true,
-                "On (default since 0.8.6): when a pooled sound source plays with a longer range than it had when it was registered " +
+                "On (default since 0.8.8): when a pooled sound source plays with a longer range than it had when it was registered " +
                 "(grenade bounces, objects that register early), the game kept the old, shorter range and never calculated walls and rooms for it - " +
                 "grenade bounces behind walls played at full volume. On = the range is updated when the sound starts and the first value is " +
                 "calculated at once. Off = game behaviour. Applies live.");
             StillAn = c.Bind(s, "One-shot sounds start only after their occlusion", true,
-                "On (default since 0.8.6): bullet impacts, ricochets, doors, containers, breaking windows and other one-shot sounds in other rooms are started silent; " +
+                "On (default since 0.8.8): bullet impacts, ricochets, doors, containers, breaking windows and other one-shot sounds in other rooms are started silent; " +
                 "the game mutes them a moment later anyway until their path is calculated. Before, the first audio block (about 1/50 s) could " +
                 "slip out at full volume - a short loud click even when the sound is 40 dB down. Sounds in your own room start normally. " +
                 "Off = game behaviour. Applies live.");

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Materialklang
 {
-    // 0.8.6 - Raumweg fuer Quellen ohne Okklusion im Spiel (BTR, Taxi, Lok, Flugzeug, Fackeln, Feuer, Generatoren, Ambient-Spieler;
+    // 0.8.8 - Raumweg fuer Quellen ohne Okklusion im Spiel (BTR, Taxi, Lok, Flugzeug, Fackeln, Feuer, Generatoren, Ambient-Spieler;
     // Abschnitte 15/17/18, WandDaempfung.cs). Meldung Streets 09.11.2026: "mitten im Gebaeude, der BTR kommt direkt durch die Waende
     // statt durch Tueren und Fenster". Diese Quellen bekamen nur die Wand (5 Linien) plus einen pauschalen Umweg (15 dB draussen /
     // 25 dB + 5 je Portal zwischen Raeumen), keine Route durch die Oeffnungen und keine Richtung ueber die Oeffnung.
@@ -97,7 +97,7 @@ namespace Materialklang
                     if (!z.Ersatz) z.Vergessen();
                     z.A = q; z.B = h; z.Umgekehrt = false; z.RaumA = qr; z.RaumB = hr; z.Paar = 0xFFFFFFFEu; z.Ersatz = true; z.Behaelter = null;
                     long tr = Laufzeit.Jetzt; int bild = Time.frameCount;
-                    bool ok = Ersatzweg.Fuellen(z, q, h, qr, hr, jetzt, out string text, eigen);   // 0.8.6: eigenes Fahrzeug schirmt nicht ab
+                    bool ok = Ersatzweg.Fuellen(z, q, h, qr, hr, jetzt, out string text, eigen);   // 0.8.8: eigenes Fahrzeug schirmt nicht ab
                     ZeitRechnen.Dazu(tr, bild);
                     if (ok && Ergebnis(w, h, dyn))
                     {
@@ -118,7 +118,7 @@ namespace Materialklang
 
         static readonly AussenSchirm schirmImpl = new AussenSchirm();
 
-        /// <summary>0.8.6 (Ground Zero 09.11.2026 21:34 MARK 6/7, Ursache: RaumwegNetz.Schirmen): Abschirmung der Strecken einer Route
+        /// <summary>0.8.8 (Ground Zero 09.11.2026 21:34 MARK 6/7, Ursache: RaumwegNetz.Schirmen): Abschirmung der Strecken einer Route
         /// im Freien - dasselbe Hoehenprofil wie der Ersatzweg (Ersatzweg.Profil, ISO 9613-2, eigenes Fahrzeug zaehlt nicht).
         /// Cache je Strecke: Endpunkt an einem Portal = Portalindex (alle Routen ueber dasselbe Portal teilen das Profil, das Portal
         /// liegt fest), an Quelle/Hoerer = 2-m- bzw. 1-m-Zelle; 1 s gueltig wie der Ersatzweg.</summary>

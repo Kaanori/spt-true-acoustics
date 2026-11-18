@@ -175,7 +175,7 @@ namespace Materialklang
                 // einseitige Flaeche: Dicke je Gruppe (0.8.3, wie die Wand zwischen Raeumen; vorher fuer alles 0,1 m)
                 if (dicke < 0f) dicke = Bauakustik.EinzelDicke(m, StandardDicke.Value);
                 if (dicke > MaxDicke.Value) return 0f;
-                // 0.8.6: Tuer-Collider = Blatt der Tuer (wie Portal und Hindernis), nicht Gruppe x Strahllaenge
+                // 0.8.8: Tuer-Collider = Blatt der Tuer (wie Portal und Hindernis), nicht Gruppe x Strahllaenge
                 if (Physik.An) x += Physik.DaemmungStueck(einId[i], m, dicke);
                 else
                 {

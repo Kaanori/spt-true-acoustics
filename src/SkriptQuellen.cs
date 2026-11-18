@@ -225,16 +225,16 @@ namespace Materialklang
         {
             if (basis == null || basis.length < 2 || !(alt > 0) || !(neu > 0)) return null;
             var d = kurven.GetValue(basis, _ => new Dictionary<long, Fertig>());
-            long k = SkriptQuellenKern.Schluessel(alt, neu) ^ ((long)art << 56);   // 0.8.6: Abstandsgesetz je Art
+            long k = SkriptQuellenKern.Schluessel(alt, neu) ^ ((long)art << 56);   // 0.8.8: Abstandsgesetz je Art
             if (d.TryGetValue(k, out var f)) return f;
             f = Bauen(FesteQuellen.AltFunktion(AudioRolloffMode.Custom, basis, 0f, (float)alt), alt, neu, art);
             d[k] = f;
             return f;
         }
 
-        /// <summary>0.8.6 Abstandskurve: Bezugsabstand und Abstandsgesetz der Art (QuellPegelKern.Mass). Der Clip wechselt je Abspielen
+        /// <summary>0.8.8 Abstandskurve: Bezugsabstand und Abstandsgesetz der Art (QuellPegelKern.Mass). Der Clip wechselt je Abspielen
         /// und die Kurve wird je Spielkurve geteilt - der Clip-Pegel ist hier unbekannt (ueberDb NaN): laute Arten (Lok, Flugzeug,
-        /// Horn, Pfeifen, Tor, BTR-Turm, Fackel) und Arten ohne Pegel (Tueren, Landung, Leuchtpatrone) behalten die Kurve bis 0.8.6-dev
+        /// Horn, Pfeifen, Tor, BTR-Turm, Fackel) und Arten ohne Pegel (Tueren, Landung, Leuchtpatrone) behalten die Kurve bis 0.8.8-dev
         /// (UmgebungKern.KlipGrenze).</summary>
         static Fertig Bauen(Func<double, double> altF, double alt, double neu, SkriptArt art)
         {
@@ -585,7 +585,7 @@ namespace Materialklang
             }
             q.An = an;
             Zaehlen(q.Art, q.Alt, an ? q.F.Neu : q.Alt, an);
-            WandDaempfung.Melden(s, an, "scripted", SkriptQuellenKern.Name(q.Art) + " " + q.Rolle, eigen: q.L != null ? q.L.transform : null, pegel: QuellPegelKern.Von(q.Art), bezug: an && q.F != null ? FesteQuellen.KalBezug(q.F.Bez) : double.NaN);   // 0.8.5 (0.8.6: Bezugsabstand)
+            WandDaempfung.Melden(s, an, "scripted", SkriptQuellenKern.Name(q.Art) + " " + q.Rolle, eigen: q.L != null ? q.L.transform : null, pegel: QuellPegelKern.Von(q.Art), bezug: an && q.F != null ? FesteQuellen.KalBezug(q.F.Bez) : double.NaN);   // 0.8.5 (0.8.8: Bezugsabstand)
             int id = s.GetInstanceID();
             if (!laufend.TryGetValue(id, out var l)) laufend[id] = l = new Lauf();
             l.A = s; l.B = null; l.Art = q.Art; l.Name = q.Rolle + " " + s.gameObject.name; l.Alt = q.Alt; l.F = an ? q.F : null; l.Neustellen = null; l.LetztD = -1;

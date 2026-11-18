@@ -45,7 +45,7 @@ namespace Materialklang
         static void SehnenBinden(ConfigFile cfg, string sek)
         {
             SehnenAn = cfg.Bind(sek, "Room absorption from random chords", true,
-                "On (default since 0.8.6): the absorption of every interior room comes from random chords through its air volume " +
+                "On (default since 0.8.8): the absorption of every interior room comes from random chords through its air volume " +
                 "(mean free path 4V/S, Kuttruff): machines, crates, pipes and walkways count with their own surface, and each material counts with its " +
                 "area. Before, only the outer surface of the room boxes and 64 rays from the room centre counted - big furnished halls came out with " +
                 "6-7 s reverb instead of about 2.5-4.5 s. The measurement runs at raid start spread over the frames (1 ms per frame) and is cached " +

@@ -11,7 +11,7 @@ namespace Materialklang
 
     // 0.8.5 - 18. Scripted sources: reine Rechnung (ohne Unity, im Offline-Test).
     //
-    // Gleiche Regel wie Abschnitt 17 (QuellRegelKern + UmgebungKern.Bauen): bis zum Bezugsabstand (0.8.6) die Kurve des Spiels (an der Quelle gleich laut),
+    // Gleiche Regel wie Abschnitt 17 (QuellRegelKern + UmgebungKern.Bauen): bis zum Bezugsabstand (0.8.8) die Kurve des Spiels (an der Quelle gleich laut),
     // danach 1/r (-6 dB je Verdopplung), weicher cos^2-Auslauf auf den letzten 25 %, Reichweite = alt x Faktor, gedeckelt je Art,
     // nie kuerzer als im Spiel. Werte je Art (Beleg: klangquellen-inventur-skript.md, Top-10, 09.11.2026; reale Pegel = Schaetzung):
     //   Lok Horn/Fahrt   300 m x 5  -> 1500 m  (Horn 96-110 dB(A) in 30 m, 49 CFR 229.129; fahrende Lok 90 dB(A) in 30 m)

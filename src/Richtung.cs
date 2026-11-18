@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Materialklang
 {
-    // 0.8.6 - Richtung ueber die Oeffnung (Ursache, Beleg und Regel: RichtungKern.cs). Spiel-Teil:
+    // 0.8.8 - Richtung ueber die Oeffnung (Ursache, Beleg und Regel: RichtungKern.cs). Spiel-Teil:
     //  - Raumweg.ApplyEnde meldet jede Quelle, auf die gerade ein Raumweg angewendet wurde (Melden): alle Quellen ihres Containers
     //    bekommen einen Eintrag und werden sofort - noch vor dem Audio-Update dieses Bilds - in die Richtung des Austritts gesetzt.
     //  - SpatialAudioSystem.LateUpdate (Postfix, nach allen Okklusionen des Bilds): jede eingetragene Quelle wird nachgefuehrt
@@ -89,7 +89,7 @@ namespace Materialklang
             public double HaltAnteil;
         }
 
-        // 0.8.6: letzte Richtung je Container (Figur), damit neue Einmal-Klaenge derselben Figur nicht springen
+        // 0.8.8: letzte Richtung je Container (Figur), damit neue Einmal-Klaenge derselben Figur nicht springen
         sealed class Spur { public V3 Dir; public double Zeit; }
         const double SpurS = 1.0;
         static readonly System.Runtime.CompilerServices.ConditionalWeakTable<AudioSourceContainer, Spur> Spuren =
@@ -128,7 +128,7 @@ namespace Materialklang
                     new AcceptableValueRange<float>(0f, 1000f)));
             Aktiv.SettingChanged += (_, __) => { if (!Aktiv.Value) AllesZurueck(); };
             DiffusAusOeffnung = c.Bind(s, "Room paths: diffuse part from the openings", true,
-                "On (default since 0.8.6): when the diffuse part of a room path is played dry ('Diffuse sound stays audible'), its direction is " +
+                "On (default since 0.8.8): when the diffuse part of a room path is played dry ('Diffuse sound stays audible'), its direction is " +
                 "the opening it comes in through - weighted with its full energy - and the direction is turned fully to the openings, also when they lie " +
                 "on different sides (then the energy-weighted middle). Before, only the small directed rest set the direction and the sound stayed partly " +
                 "at the source, i.e. it came through the ceiling or wall. Off = behaviour up to 0.8.5. Applies to new calculations.");
@@ -141,27 +141,27 @@ namespace Materialklang
             KanteAktiv.SettingChanged += (_, __) => { if (!KanteAktiv.Value) AllesZurueck(); };
             // wegrichtung2 (17.11.)
             Fuehrend = c.Bind(s, "Room paths: direction from the leading path", true,
-                "On (default since 0.8.6): when a sound comes in through openings on different sides, you hear it from the side of the path that " +
+                "On (default since 0.8.8): when a sound comes in through openings on different sides, you hear it from the side of the path that " +
                 "arrives first (or is clearly louder) - your ear locates by the first sound front. Paths on the same side are averaged; paths more " +
                 "than 60-90 degrees away from the leading one no longer pull the direction. Also: how much comes through the wall instead of the " +
                 "openings is taken from the current values, not the game's smoothed one. Off = energy-weighted middle of all openings " +
                 "which can point at the wall between two doors. Applies to new calculations.");
             // raid2242richtung (17.11.): Praezedenz mit der vollen Energie jeder Route (RichtungKern.PraezedenzOhneRang)
             PraezedenzAlle = c.Bind(s, "Room paths: first sound front from all paths", true,
-                "On (default since 0.8.6): which path arrives first is decided with the full energy of every path the game delivers. " +
+                "On (default since 0.8.8): which path arrives first is decided with the full energy of every path the game delivers. " +
                 "Before, only the three loudest paths counted fully (a smoothing choice for the volume sum), so an early, somewhat quieter " +
                 "path through a nearby opening could lose against a louder path that arrives 40-50 ms later from behind. Volume is unchanged. " +
                 "Off = behaviour up to 0.8.5. Applies live.");
             RichtungKern.PraezedenzOhneRang = PraezedenzAlle.Value;
             PraezedenzAlle.SettingChanged += (_, __) => RichtungKern.PraezedenzOhneRang = PraezedenzAlle.Value;
             EinmalAktiv = c.Bind(s, "Room paths: direction for one-shot sounds", true,
-                "On (default since 0.8.6): bullet impacts, shell casings, doors, windows and distant explosions in other rooms are also heard from " +
+                "On (default since 0.8.8): bullet impacts, shell casings, doors, windows and distant explosions in other rooms are also heard from " +
                 "the opening they come through, like footsteps and voices. Before, these one-shot sounds always came straight from their source " +
                 "through the wall (the mod looked up the wrong sound). Off = from the source. Applies to new sounds.");
             EinmalAktiv.SettingChanged += (_, __) => { if (!EinmalAktiv.Value) AllesZurueck(); };
             // zweitweg (17.11.)
             ZweitAktiv = c.Bind(s, "Room paths: second path as its own voice", true,
-                "On (default since 0.8.6): when a sound reaches you through openings in clearly different directions, each " +
+                "On (default since 0.8.8): when a sound reaches you through openings in clearly different directions, each " +
                 "direction is played as its own copy of the sound: from its opening, with the energy that really comes that way (all copies together " +
                 "are exactly as loud as before), its own timbre and later by its extra travel time - your ear then hears all ways as in reality. Paths " +
                 "within ~10-20 degrees share one copy; a copy is left out only when it is surely inaudible (more than 30 dB below the rest) or no free " +
@@ -338,7 +338,7 @@ namespace Materialklang
                 if (e.EigenerOcc) e.GesamtDb = Physik.Dynamik.Value * Mathf.Clamp01(e.Occ.PropagationEffect);
                 // wegrichtung2: Wandanteil aus den ungeglaetteten Werten (Route gegen Wand zwischen den Raeumen), nicht gegen die geglaettete Wirkung
                 anteil = FuehrendAn ? RichtungKern.AnteilWand(routeDb, WandDb(e.Pc)) : RichtungKern.Anteil(routeDb, e.GesamtDb);
-                // 0.8.6: Gewicht = Energieanteil der Oeffnungen x Buendelung ihrer Richtungen (kommen sie gleich stark von entgegengesetzten
+                // 0.8.8: Gewicht = Energieanteil der Oeffnungen x Buendelung ihrer Richtungen (kommen sie gleich stark von entgegengesetzten
                 // Seiten, gibt es keine Richtung "der Oeffnung" -> bleibt bei der Quelle)
                 // tunneldiffus (17.11.): Gewicht ohne Buendel, wenn der Diffusanteil aus den Oeffnungen kommt (RichtungKern.RaumGewicht)
                 // wegrichtung2: ebenso mit dem fuehrenden Weg - die Richtung ist dann die seine, das Buendel nur noch die Breite (Log)
@@ -367,7 +367,7 @@ namespace Materialklang
             double dt = double.IsNaN(e.Zeit) ? 0 : Math.Max(0, jetzt - e.Zeit);
             e.Zeit = jetzt;
             // neuer Klang (noch nie gesetzt): sofort in der Zielrichtung; danach mit der Zeitkonstante nachfuehren.
-            // 0.8.6: hatte derselbe Container (Figur) eben schon eine Richtung (vorige Schritte, Ausruestung, Stimme), geht es von
+            // 0.8.8: hatte derselbe Container (Figur) eben schon eine Richtung (vorige Schritte, Ausruestung, Stimme), geht es von
             // dort aus weiter - sonst springt jeder neue Einmal-Klang (Log 09.11.: 7 % der Folgemeldungen derselben Quelle > 45 Grad).
             // wegrichtung: die Kantenrichtung zusaetzlich hoechstens KanteMaxGradS (Zellwechsel der Tabelle springen sonst durch).
             double tau = GlaettungMs != null ? GlaettungMs.Value / 1000.0 : 0;

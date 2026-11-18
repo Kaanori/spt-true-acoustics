@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Materialklang
 {
     // ---------------------------------------------------------------------------------------------
-    //  0.8.6 Kalibrierung der Quellpegel (Kaan 09.11.2026: "Bau die saubere Kalibrierung.")
+    //  0.8.8 Kalibrierung der Quellpegel (Kaan 09.11.2026: "Bau die saubere Kalibrierung.")
     //
     //  Problem: die Quellen ohne Spiel-Okklusion (Taxi, BTR, Lok, Flugzeug, Feuer, Generatoren, Maschinen, Tropfen, Alarme,
     //  Ambient-Spieler) klingen so laut, wie ihr Clip gemastert ist (Clip-Pegel x Spiel-volume x Mixer-Gruppe). Die Pegeltabelle
@@ -24,7 +24,7 @@ namespace Materialklang
     //  Schleifen (Leerlauf, Feuer, Generator) mit LAeq, Einzelklaenge (Tor, Horn, Pfeifen, Schritte) mit LAFmax (125 ms), wie
     //  eine Pegelmessung "fast" (IEC 61672-1).
     //
-    //  0.8.6 GUTACHTEN KALIBRIERUNG (10.11.2026, GUTACHTEN-KALIBRIERUNG.md) - umgesetzt:
+    //  0.8.8 GUTACHTEN KALIBRIERUNG (10.11.2026, GUTACHTEN-KALIBRIERUNG.md) - umgesetzt:
     //  - Korrektur am Bezugsabstand r der Quelle statt pauschal in 1 m: Soll(r) = Tabelle(1 m) + 20 lg G(r) (Abstandsgesetz der
     //    Quellart, QuellPegelKern.Gesetz), Ist(r) = Clip + 20 lg vol + 20 lg Kurve(r) + Gruppe, Korrektur = Soll(r) + K - Ist(r).
     //  - Grenzen -12 ... +3 dB (Absenken erlaubt, Anheben kaum: ein Schritt-Bezug ist auf +-5 dB genau, +9 ... +15 dB lassen sich
@@ -45,10 +45,10 @@ namespace Materialklang
     internal static class KalibrierKern
     {
         public const double SchrittDbA = 65.0;     // Rennen auf Asphalt/Beton, LAFmax in 1 m (Schaetzung, Gutachten Frage 1)
-        public const double MaxAnheben = 3.0;      // 0.8.6 Gutachten: hoechstens +3 dB
-        public const double MaxAbsenken = 12.0;    // 0.8.6 Gutachten: hoechstens -12 dB
-        public const double Schwelle = 3.0;        // 0.8.6 Gutachten: |Korrektur| < 3 dB wird nicht angewendet
-        public const int BezugMin = 30;            // 0.8.6 Gutachten: so viele Bezugsschritte, bevor der Raid-eigene Bezug gilt
+        public const double MaxAnheben = 3.0;      // 0.8.8 Gutachten: hoechstens +3 dB
+        public const double MaxAbsenken = 12.0;    // 0.8.8 Gutachten: hoechstens -12 dB
+        public const double Schwelle = 3.0;        // 0.8.8 Gutachten: |Korrektur| < 3 dB wird nicht angewendet
+        public const int BezugMin = 30;            // 0.8.8 Gutachten: so viele Bezugsschritte, bevor der Raid-eigene Bezug gilt
         public const double KStandard = -100.4;    // dBFS(A) je dB(A) in 1 m: Gutachten, Clip-Mediane aller drei Gangarten (-98,8/-99,6/-100,5)
         public const double OhrHoehe = 1.7;        // m ueber dem Fusspunkt (eigene Schritte)
         public static readonly double[] GangSoll = { 57.0, 65.0, 70.0 };   // Gehen / Rennen / Sprint, dB(A) LAFmax in 1 m (Schaetzung)
@@ -121,7 +121,7 @@ namespace Materialklang
             return m;
         }
 
-        /// <summary>LAeq und LAFmax (125 ms gleitend) in dBFS(A) aus verschachtelten Abtastwerten. 0.8.6: je Kanal A-bewertet, die
+        /// <summary>LAeq und LAFmax (125 ms gleitend) in dBFS(A) aus verschachtelten Abtastwerten. 0.8.8: je Kanal A-bewertet, die
         /// Energie danach ueber die Kanaele gemittelt (bis dahin wurden die Abtastwerte vorher gemittelt: unkorreliertes Stereo
         /// bis 3 dB zu leise). n = Zahl der Frames (hoechstens data.Length / kanaele). false = zu kurz / leer.</summary>
         public static bool Pegel(float[] data, int kanaele, int n, double fs, out double laeq, out double lafmax)
@@ -175,10 +175,10 @@ namespace Materialklang
         /// <summary>Bezug K (dBFS je dB(A) in 1 m) aus dem Median der Bezugsschritte (Rennen, 65 dB(A)).</summary>
         public static double Bezug(double medianSchritt) => medianSchritt - SchrittDbA;
 
-        /// <summary>0.8.6: K-Beitrag eines Schritts der Gangart g: gespielt (dBFS(A) in 1 m) - Soll der Gangart. NaN bei g &lt; 0.</summary>
+        /// <summary>0.8.8: K-Beitrag eines Schritts der Gangart g: gespielt (dBFS(A) in 1 m) - Soll der Gangart. NaN bei g &lt; 0.</summary>
         public static double SchrittK(double gespieltDbFs, int g) => g >= 0 && g < 3 ? gespieltDbFs - GangSoll[g] : double.NaN;
 
-        /// <summary>0.8.6: Bezug K fuer den Raid. Ab BezugMin Schritten der Median ihrer K-Beitraege, sonst der gespeicherte Wert des
+        /// <summary>0.8.8: Bezug K fuer den Raid. Ab BezugMin Schritten der Median ihrer K-Beitraege, sonst der gespeicherte Wert des
         /// letzten Raids, sonst KStandard. quelle: "raid" / "last raid" / "default".</summary>
         public static double BezugK(List<double> kWerte, double kGespeichert, out string quelle)
         {
@@ -221,7 +221,7 @@ namespace Materialklang
         /// heraus (nur exponierte Parameter) - deshalb die Werte aus dem Bundle; unbekannte Gruppe = 0 dB.</summary>
         public static double GruppeDb(string gruppe) => GruppeDb(gruppe, false);
 
-        /// <summary>0.8.6 (Gutachten Punkt 3 "Mixer nur aus dem ersten Snapshot"): beide Snapshots, die das Spiel benutzt
+        /// <summary>0.8.8 (Gutachten Punkt 3 "Mixer nur aus dem ersten Snapshot"): beide Snapshots, die das Spiel benutzt
         /// (draussen = "Outdoor", sonst "Indoor"; "Bunker" waehlt BetterAudio nie). Ausgelesen 10.11.2026 aus live_mastermixer.bundle
         /// (AudioMixerController, Gruppen per GUID, Pfadsumme je Snapshot). Im Outdoor-Snapshot steht die Gruppe "Main" auf -80 dB;
         /// alle hier gebrauchten Gruppen haengen unter Main, relativ zu ObservedPlayerMovement (ebenfalls unter Main) gilt der Wert
@@ -272,14 +272,14 @@ namespace Materialklang
             }
         }
 
-        // ------------------------------------------------------------------ 0.8.6 Clip-Pegel aus der Offline-Tabelle
+        // ------------------------------------------------------------------ 0.8.8 Clip-Pegel aus der Offline-Tabelle
         //  Ursache "calibration: waiting for footsteps" ueber einen ganzen Raid (Streets 09.11.2026 23:50, ~1 h): die Schritt-Clips
         //  (sounds.bundle, 1655 Clips) haben preloadAudioData = 0 und loadInBackground = 1. Beim ersten Abspielen (Prefix auf
         //  BetterSource.Play) ist der Clip noch nicht geladen; Kalibrierung.Clip hat das als "kein Pegel" fuer immer gemerkt -
         //  LogOutput 10.11. 00:1x: "clips without data 245 (streamed 4)", 5 Schritte in einer Stunde. Gestreamte Clips
         //  (Vorbis: amb_fireplace, amb_generators_loop, Tropfen, Alarme) gehen mit GetData gar nicht.
         //  Fix: Pegel aller Clips offline aus den Spieldateien (Materialklang-KlangTest/werkzeuge/clip-pegel.py, gleiche
-        //  A-Bewertung, LAeq + LAFmax 125 ms, hoechstens 30 s, 0.8.6: Kanaele energetisch gemittelt; Vorbis ueber werkzeuge/fsbvorbis.c) als Daten
+        //  A-Bewertung, LAeq + LAFmax 125 ms, hoechstens 30 s, 0.8.8: Kanaele energetisch gemittelt; Vorbis ueber werkzeuge/fsbvorbis.c) als Daten
         //  im Plugin (ClipPegelDaten.cs). GetData bleibt Ersatz fuer Clips, die nicht in der Tabelle stehen (Mods), und merkt
         //  sich "nicht geladen" nicht mehr.
         public struct ClipEintrag { public int Samples; public double Laeq, Lafmax; }

@@ -316,7 +316,7 @@ namespace Materialklang
 
         public string HallQuelle, HallHoerer;
         public string RaumwegText;       // 0.8.4: Portalkette des physikalischen Raumwegs (beginnt mit " | room path:")
-        public string RichtungText;      // 0.8.6: " | direction: ..." (Richtung ueber die Oeffnung)
+        public string RichtungText;      // 0.8.8: " | direction: ..." (Richtung ueber die Oeffnung)
         public string WegeText;          // 0.8.4 Stufe 1: Beitrag jedes Wegs in dB und die Summe (beginnt mit " | paths")
         public float HallQuelleRt, HallQuelleDb, HallHoererRt, HallHoererDb;
         public int QuellId, OccId, RechnerId;   // 10.11.: Instanz der Quelle / des Occluders / des Raumweg-Rechners (Pool-Wiederverwendung sichtbar), 0 = keine

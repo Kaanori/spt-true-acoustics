@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Materialklang
 {
-    // 0.8.6 - Kalibrierung der Quellpegel (Rechnung und Herleitung: KalibrierKern.cs). Spielteil:
+    // 0.8.8 - Kalibrierung der Quellpegel (Rechnung und Herleitung: KalibrierKern.cs). Spielteil:
     //  - Bezugsschritte: Player.PlayStepSound (EFT 4.1.6) -> soundBank.Play(NestedStepSoundSource, ..., num4, ...) ->
     //    BetterSource.Play(clip1, clip2, balance, volume) (SimpleSource ruft base.Play, dann PlayOneShot(clip1, volume) bei
     //    source1.volume = BaseVolume x Okklusion x Blende). Abgespielt ohne Okklusion: BaseVolume x volume. Prefix auf
@@ -20,9 +20,9 @@ namespace Materialklang
     //    der Tabelle stehen; ein noch nicht geladener Clip wird spaeter erneut versucht.
     //  - Kurve in 1 m aus der AudioSource (eigene Kurve, logarithmisch oder linear), Mixergruppe ueber ihren Namen (SEB-Bundle).
     //  - Je Quellart der Wanddaempfung: Median von Soll(r) - Ist(r) am Bezugsabstand r ihrer Quellen (je Clip, Lautstaerke und r
-    //    einmal), Korrektur = Median + K, begrenzt -12 ... +3 dB, unter 3 dB keine (0.8.6 Gutachten), WandFilter-Lautstaerke x
+    //    einmal), Korrektur = Median + K, begrenzt -12 ... +3 dB, unter 3 dB keine (0.8.8 Gutachten), WandFilter-Lautstaerke x
     //    10^(Korrektur/20), 300 ms Ueberblendung des Filters.
-    //  - 0.8.6 Gutachten: Bezug nach Gangart (nur Asphalt/Beton), ab 30 Schritten; bis dahin der gespeicherte K-Wert des letzten
+    //  - 0.8.8 Gutachten: Bezug nach Gangart (nur Asphalt/Beton), ab 30 Schritten; bis dahin der gespeicherte K-Wert des letzten
     //    Raids (BepInEx/cache/TrueAcoustics/calibration-reference.txt), sonst KalibrierKern.KStandard. Keine Einblendung.
     internal static class Kalibrierung
     {
@@ -30,7 +30,7 @@ namespace Materialklang
 
         sealed class ClipWert { public bool Ok; public double Laeq, Lafmax; }
         static readonly Dictionary<int, ClipWert> clips = new Dictionary<int, ClipWert>(512);
-        static readonly List<double> kWerte = new List<double>(512);           // 0.8.6: K-Beitraege (gespielt - Soll der Gangart), fremde + eigene
+        static readonly List<double> kWerte = new List<double>(512);           // 0.8.8: K-Beitraege (gespielt - Soll der Gangart), fremde + eigene
         static readonly int[] jeGang = new int[3], jeGangEigen = new int[3];
         static double kGespeichert = double.NaN; static int nGespeichert; static bool geladen;
         static double kAktuell = double.NaN; static string kQuelle = "default"; static bool kAlt = true;
@@ -277,7 +277,7 @@ namespace Materialklang
             return kAktuell;
         }
 
-        /// <summary>0.8.6 Abstandskurve: um wie viel dB die Quelle real (Tabelle in 1 m + K) lauter ist, als das Spiel ihren Clip im
+        /// <summary>0.8.8 Abstandskurve: um wie viel dB die Quelle real (Tabelle in 1 m + K) lauter ist, als das Spiel ihren Clip im
         /// Plateau spielt (Clip + Lautstaerke + Gruppe). NaN = Clip oder Quellart unbekannt. Fuer UmgebungKern.Bezugsabstand.</summary>
         internal static double UeberDb(PegelArt a, AudioSource s)
         {
@@ -363,7 +363,7 @@ namespace Materialklang
 
         /// <summary>Clip-Pegel: zuerst die Offline-Tabelle (ClipPegelDaten, alle Clips des Spiels, auch gestreamte), sonst
         /// GetData. Ein noch nicht geladener Clip (Schritte: preloadAudioData aus, laden beim ersten Play im Hintergrund) wird
-        /// NICHT als "ohne Pegel" gemerkt - bis 0.8.6-dev blieb so jeder Schritt-Clip fuer den ganzen Raid ohne Pegel.</summary>
+        /// NICHT als "ohne Pegel" gemerkt - bis 0.8.8-dev blieb so jeder Schritt-Clip fuer den ganzen Raid ohne Pegel.</summary>
         static ClipWert Clip(AudioClip c)
         {
             if (c == null) return null;
@@ -422,7 +422,7 @@ namespace Materialklang
             return k;
         }
 
-        /// <summary>0.8.6: wirksame Kurve im Abstand d - die Entfernung daempft nur den 3D-Anteil (spatialBlend; Gutachten Punkt 3).</summary>
+        /// <summary>0.8.8: wirksame Kurve im Abstand d - die Entfernung daempft nur den 3D-Anteil (spatialBlend; Gutachten Punkt 3).</summary>
         static double KurveWirksam(AudioSource s, float d) => KalibrierKern.KurveWirksam(Kurve(s, d), s.spatialBlend);
 
         /// <summary>Kurvenwert der Quelle im Abstand d (wie Unity: eigene Kurve ueber d / maxDistance, sonst log./linear).</summary>
@@ -467,7 +467,7 @@ namespace Materialklang
                     if (clip1 != null && w1 != null && w1.Ok) { double g = clip2 != null ? balance : 1.0; e += Math.Pow(10, w1.Lafmax / 10) * g * g; ok = true; }
                     if (clip2 != null && w2 != null && w2.Ok) { double g = clip1 != null ? 1 - balance : 1.0; e += Math.Pow(10, w2.Lafmax / 10) * g * g; ok = true; }
                     if (!ok || e <= 0) return;
-                    // 0.8.6 Gutachten: nur Asphalt/Beton, nach Gangart (Clipname walk_/run_/sprint_)
+                    // 0.8.8 Gutachten: nur Asphalt/Beton, nach Gangart (Clipname walk_/run_/sprint_)
                     int gang = KalibrierKern.Gangart(clip1 != null ? clip1.name : null);
                     if (gang < 0) gang = KalibrierKern.Gangart(clip2 != null ? clip2.name : null);
                     if (gang < 0) { dAndereSchritte++; return; }
@@ -501,7 +501,7 @@ namespace Materialklang
             var mass = QuellPegelKern.Mass(a);
             if (double.IsPositiveInfinity(bezug))
             {
-                // 0.8.6 Abstandskurve: Kurve folgt schon der echten Pegel-Linie (laute Quelle, das Spiel komprimiert sie in der Naehe)
+                // 0.8.8 Abstandskurve: Kurve folgt schon der echten Pegel-Linie (laute Quelle, das Spiel komprimiert sie in der Naehe)
                 if (log) text = " | calibration: none (curve follows the real level line of a " + QuellPegelKern.Name(a) + ")";
                 return 0;
             }

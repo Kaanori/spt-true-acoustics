@@ -7,7 +7,7 @@ using System.Threading;
 namespace Materialklang.Schallweg
 {
     // ------------------------------------------------------------------------------------------
-    //  0.8.6 Wegsuche (Etappe 3): Arbeitsfaden. Ohne Unity (Offline-Test faehrt ihn genauso).
+    //  0.8.8 Wegsuche (Etappe 3): Arbeitsfaden. Ohne Unity (Offline-Test faehrt ihn genauso).
     //   - Hauptfaden: Hoerer(), Anfrage(), TuerSetzen() schreiben in den Eingang (Sperre, nur Kopien von Zahlen);
     //     Holen() liest das letzte fertige Ergebnis je Quelle (unveraenderliches Objekt, Sperre nur fuer den Woerterbuchzugriff).
     //   - Faden: 10 Hz. Eingang uebernehmen (Puffer tauschen) -> Tuerzustaende anwenden -> Hoererbaum neu, wenn der Hoerer die
@@ -23,7 +23,7 @@ namespace Materialklang.Schallweg
         public double[] Summe = new double[3]; public double Ms; public int Strahlen, Tuerstand; public string Kachel;
         /// <summary>Ankunftsrichtung (Hoerer -> letzter Wegpunkt) des lautesten Wegs (1 kHz); bei freier Sicht die Quelle.</summary>
         public V Ankunft;
-        // 0.8.6 Livetest-Fix
+        // 0.8.8 Livetest-Fix
         public V QFrei, HFrei; public double QWeg, HWeg;            // gerechnete Punkte (aus Koerpern geschoben) und Verschiebung (m)
         public int Teile = 1; public bool Aufgegeben;               // Takte der Suche (> 1 = nach Budget fortgesetzt); Aufgegeben = ohne Weg nach MaxTeile
         public List<RaumKette> Raeume = new List<RaumKette>();      // Raumanteile (Diffusfeld) der Raumfolgen der Wege, je Folge einmal
@@ -65,7 +65,7 @@ namespace Materialklang.Schallweg
         public double BudgetMs = 2.0, TaktMs = 30.0, TaktS = 0.1;
         public int WegeK = 5, MaxTeile = 12;   // MaxTeile: so viele Takte darf eine Suche ohne ersten Weg fortgesetzt werden
         public double AnfrageS = 2.0;         // Anfragen, die laenger nicht erneuert wurden, fallen weg
-        public double QuelleM = 1.0, HoererM = 0.5;   // ab dieser Bewegung neu rechnen (0.8.6: Quelle 1 m - Schritte wandern 0,3-0,5 m je Klang)
+        public double QuelleM = 1.0, HoererM = 0.5;   // ab dieser Bewegung neu rechnen (0.8.8: Quelle 1 m - Schritte wandern 0,3-0,5 m je Klang)
         /// <summary>wegsuche-use (7a): so weit (m) darf sich eine Quelle vom Ort ihres Ergebnisses bzw. ihrer laufenden Suche entfernen, bis es
         /// nicht mehr gilt (Wegsuche.Fuer) bzw. die Suche neu beginnt. Befund Use-Raid 18:40: neu gerechnet wurde ab QuelleM = 1 m, das Ergebnis
         /// galt aber auch nur bis 1 m - jede Neuberechnung riss also eine Luecke (Mod-Wert, 12-16 dB anders), und eine Suche ueber mehrere Takte
@@ -73,7 +73,7 @@ namespace Materialklang.Schallweg
         /// 0,5 m, gueltig bis 3 m): neu ab QuelleM, gueltig und fortgesetzt bis QuelleHaltM. Die Annahme dahinter ist dieselbe wie beim Hoerer:
         /// das Ergebnis eines Orts ist fuer die Dauer einer Neuberechnung (wenige Takte) der beste bekannte Wert in seiner Naehe.</summary>
         public double QuelleHaltM = 3.0;
-        public bool RaumAn = true;            // 0.8.6: Raumanteil (Diffusfeld) entlang der Wege
+        public bool RaumAn = true;            // 0.8.8: Raumanteil (Diffusfeld) entlang der Wege
         public bool RaumGraph = true;         // Raid-2-Fix: Raumanteil zusaetzlich ueber den Raumgraphen (unabhaengig vom gefundenen Weg)
         public bool Vorbau = true;            // Weg A: Baum der naechsten Zelle vorbauen
         public const int VorratMax = 12;
@@ -232,9 +232,9 @@ namespace Materialklang.Schallweg
         }
         public int DProbeZweiOrte, DProbeSchluessel;   // Schluessel je Takt gezaehlt (Summe ueber die Takte)
         public void TuerSetzen(int portal, bool zu) { lock (einSperre) ein.Tueren[portal] = zu; }
-        /// <summary>0.8.6: Zustand eines Raumportals ohne Netzportal (grosse Tore/Oeffnungen, Index WegDaten.Q*).</summary>
+        /// <summary>0.8.8: Zustand eines Raumportals ohne Netzportal (grosse Tore/Oeffnungen, Index WegDaten.Q*).</summary>
         public void RaumTuerSetzen(int q, bool zu) { lock (einSperre) ein.RaumTueren[q] = zu; }
-        /// <summary>0.8.6: Raumabsorption alpha (Raumweg-Einstellung der Mod).</summary>
+        /// <summary>0.8.8: Raumabsorption alpha (Raumweg-Einstellung der Mod).</summary>
         public void AlphaSetzen(double a) { lock (einSperre) ein.Alpha = a; }
         public Ergebnis Holen(long id) { lock (ausSperre) return ergebnisse.TryGetValue(id, out var e) ? e : null; }
         public void Ergebnisse(List<Ergebnis> aus) { aus.Clear(); lock (ausSperre) aus.AddRange(ergebnisse.Values); }
@@ -560,7 +560,7 @@ namespace Materialklang.Schallweg
                 if (!imNachlauf && alt != null && alt.AnfrageZeit >= ta - 1e-9 && alt.Tuerstand == tuerstand && V.Abstand(alt.H, hoerer) < HoererM && V.Abstand(alt.Q, q) < QuelleM) continue;   // aktuell
                 if (!imNachlauf && alt != null && alt.Tuerstand == tuerstand && V.Abstand(alt.H, hoerer) < HoererM && V.Abstand(alt.Q, q) < QuelleM && jetzt - alt.Zeit < 1.0)
                 { var neu = Kopie(alt, ta); lock (ausSperre) ergebnisse[id] = neu; continue; }   // gleicher Ort: Ergebnis gilt, nur die Anfrage bestaetigen
-                // 0.8.6: unterbrochene Suche (Budget vor dem ersten Weg) fortsetzen, solange Baum, Tuerstand und Quellort passen
+                // 0.8.8: unterbrochene Suche (Budget vor dem ersten Weg) fortsetzen, solange Baum, Tuerstand und Quellort passen
                 // wegsuche-use (7a): eine angefangene Suche wird zu Ende gerechnet, solange ihr Baum lebt (Felder nicht wiederverwendet), der
                 // Tuerstand gilt und die Quelle hoechstens QuelleHaltM weiter ist - vorher begann sie bei 1 m Quellbewegung oder jedem neuen
                 // Hoererbaum (gehender Hoerer: alle 0,3-0,7 s) von vorn und wurde fuer bewegte Quellen nie fertig. Ihr Ergebnis gilt fuer ihren

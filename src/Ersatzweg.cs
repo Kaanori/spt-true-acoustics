@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Materialklang
 {
-    // 0.8.6 - Ersatzweg, wenn das Spiel fuer ein Raumpaar keine Route kennt (Ursache und Formeln: RichtungKern.cs, Teil 2).
+    // 0.8.8 - Ersatzweg, wenn das Spiel fuer ein Raumpaar keine Route kennt (Ursache und Formeln: RichtungKern.cs, Teil 2).
     // ParallelSoundPropagationCalculator.OnUpdate: TryGetMatchingRoomPair ohne Routen -> _propagationScore = 1, Fruehabbruch
     // (kein Job). Im Physik-Modus heisst 1 = volle Daemmung (60 dB) = stumm, obwohl Quelle oder Hoerer im Freien steht.
     // Ersatz, nur wenn Quelle ODER Hoerer draussen ist:
@@ -23,7 +23,7 @@ namespace Materialklang
     {
         internal static class Ersatzweg
         {
-            internal static ConfigEntry<bool> Aktiv, HausAn;   // 0.8.6: HausAn = Bebauung (ISO 9613-2 Anhang A.3)
+            internal static ConfigEntry<bool> Aktiv, HausAn;   // 0.8.8: HausAn = Bebauung (ISO 9613-2 Anhang A.3)
             const int MaxOeffnungen = 4, MaxJeBild = 6, ProfilN = 48;
             const float CacheS = 1.0f, ObenM = 200f;
 
@@ -64,7 +64,7 @@ namespace Materialklang
 
             internal static void SzeneGewechselt() { Cache.Clear(); schirmImpl.Leeren(); }
 
-            /// <summary>0.8.6: Profil einer Strecke im Freien einer Route (RaumwegFrei.AussenSchirm), Frequenzen wie der Ersatzweg.</summary>
+            /// <summary>0.8.8: Profil einer Strecke im Freien einer Route (RaumwegFrei.AussenSchirm), Frequenzen wie der Ersatzweg.</summary>
             internal static Hindernis ProfilFrei(Vector3 a, Vector3 b, HashSet<int> eigen)
                 => Profil(a, b, Physik.Frequenz.Value, Wege.F[1], Wege.F[2], eigen);
 
@@ -121,7 +121,7 @@ namespace Materialklang
                     z.A = qv; z.B = hv; z.Umgekehrt = false; z.RaumA = qr; z.RaumB = hr; z.Paar = 0xFFFFFFFEu; z.Hat = false;
                     z.Behaelter = c; z.Ersatz = true;
                     double jetzt = Time.realtimeSinceStartup;
-                    bool weg = WegsucheMischen(z, jetzt);   // 0.8.6 Abschnitt 19 "Use": Wege der Wegsuche statt des Ersatzwegs
+                    bool weg = WegsucheMischen(z, jetzt);   // 0.8.8 Abschnitt 19 "Use": Wege der Wegsuche statt des Ersatzwegs
                     if (!weg)
                     {
                         z.Mix.Beginn();
@@ -140,7 +140,7 @@ namespace Materialklang
                 catch (Exception e) { Statistik.Fehler(e); }
             }
 
-            /// <summary>0.8.6: Ersatzweg fuer eine Quelle ohne Okklusion im Spiel (WandDaempfung): gleiche Rechnung und gleicher Cache wie
+            /// <summary>0.8.8: Ersatzweg fuer eine Quelle ohne Okklusion im Spiel (WandDaempfung): gleiche Rechnung und gleicher Cache wie
             /// Pruefen, Kandidaten in den Mischer von z. false = bleibt dicht (beide drinnen / keine Oeffnung nach draussen / aus).</summary>
             internal static bool Fuellen(Zustand z, Vector3 qv, Vector3 hv, ISpatialAudioRoom qr, ISpatialAudioRoom hr, double jetzt, out string text,
                                          HashSet<int> eigen = null)
@@ -238,7 +238,7 @@ namespace Materialklang
                     int pi = wahl[w].pi;
                     var g = Netz.SGeo[pi];
                     double zu = Netz.Obj(pi) ? Netz.ZuSpiel(pi) : 0.0;
-                    // Gesamtreview A4 / 0.8.6: geschlossener Teil wie RaumwegNetz.ZustandLaden - Blatt nach dem Massengesetz je Band
+                    // Gesamtreview A4 / 0.8.8: geschlossener Teil wie RaumwegNetz.ZustandLaden - Blatt nach dem Massengesetz je Band
                     // (Abschnitt 4, TuerKern.cs); ohne Blattmodell der Wert der Schliessung (TuerenFenster.ZuWert)
                     g.Offen = 1.0 - zu;
                     double b0 = Netz.Blatt(pi, 0);
@@ -252,7 +252,7 @@ namespace Materialklang
                     else
                     {
                         double zuWert = pi < portalJeIndex.Length && portalJeIndex[pi] != null ? TuerenFenster.ZuWert(portalJeIndex[pi]) : Netz.Voll[pi];
-                        // 0.8.6 Tuerfuge-Fix: wie RaumwegNetz.ZustandLaden mit der Tuerfuge parallel (TuerKern.OhneBlattDb)
+                        // 0.8.8 Tuerfuge-Fix: wie RaumwegNetz.ZustandLaden mit der Tuerfuge parallel (TuerKern.OhneBlattDb)
                         double tlDb = zu > 1e-3 ? TuerKern.OhneBlattDb(zuWert * Netz.WandP[pi] * dyn, dyn) : 0.0;
                         g.Tau = Math.Pow(10, -tlDb / 10); g.Baender = false;
                     }
@@ -310,7 +310,7 @@ namespace Materialklang
                 KText(sb, hi, inv);
             }
 
-            /// <summary>0.8.6: massgebliche Kante (Collider, Hoehe ueber der Linie, Abstand zu beiden Enden, Fresnelzahl N bei der
+            /// <summary>0.8.8: massgebliche Kante (Collider, Hoehe ueber der Linie, Abstand zu beiden Enden, Fresnelzahl N bei der
             /// Bezugsfrequenz) und die Hoehe der Endpunkte ueber dem Boden.</summary>
             static void KText(StringBuilder sb, in Hindernis hi, CultureInfo inv)
             {
@@ -325,7 +325,7 @@ namespace Materialklang
                 if (hi.Ueberhang > 0) sb.Append("; ").Append(hi.Ueberhang).Append(" overhanging points ignored");
                 if (!hi.Frei && hi.Kanten > 0)
                 {
-                    // 0.8.6: Kante, ueber die die Richtung zeigt (letzte Huellecke = erste Kante vom Hoerer aus)
+                    // 0.8.8: Kante, ueber die die Richtung zeigt (letzte Huellecke = erste Kante vom Hoerer aus)
                     double vonDir = Math.Max(0.01, D - hi.LetzteS);
                     sb.Append("; direction edge ");
                     if (hi.LetzteName != null) sb.Append('\'').Append(hi.LetzteName).Append("' ");
@@ -334,7 +334,7 @@ namespace Materialklang
                 sb.Append(']');
             }
 
-            // 0.8.6 (Meldung Streets 09.11.2026 20:02 "Taxi hat einen harten Cut"): die Abschirmung sprang bei fast gleicher Position
+            // 0.8.8 (Meldung Streets 09.11.2026 20:02 "Taxi hat einen harten Cut"): die Abschirmung sprang bei fast gleicher Position
             // zwischen 4,8 dB (Kante 0,1 m ueber der Linie) und 13-20 dB (Kante 6-12 m ueber der Linie, Umweg 1-2 m) - Messung zu Messung.
             // Ursachen im alten Profil:
             //  1. Rasterpunkte gleichmaessig zwischen Quelle und Hoerer (Abstand Laenge/(n+1), bei 200 m alle 4,1 m): mit jedem Schritt
@@ -353,8 +353,8 @@ namespace Materialklang
             // Sichtlinie hinunter reicht; das eigene Fahrzeug zaehlt nicht. Die Schattengrenze ist stetig (HindernisKern.Streifen).
             static readonly RaycastHit[] treffer = new RaycastHit[16];
             static readonly double[] rs = new double[HindernisKern.MaxProfil];
-            static readonly Collider[] pc = new Collider[HindernisKern.MaxProfil];   // 0.8.6: Collider je Profilpunkt (Klang-Log)
-            static readonly bool[] pr = new bool[HindernisKern.MaxProfil], pBau = new bool[HindernisKern.MaxProfil];   // 0.8.6: Rasterpunkt / zaehlt zur Bebauung
+            static readonly Collider[] pc = new Collider[HindernisKern.MaxProfil];   // 0.8.8: Collider je Profilpunkt (Klang-Log)
+            static readonly bool[] pr = new bool[HindernisKern.MaxProfil], pBau = new bool[HindernisKern.MaxProfil];   // 0.8.8: Rasterpunkt / zaehlt zur Bebauung
             static readonly Collider[] kc = new Collider[8];   // Collider der Huellecken (Kanten-Gebaeude)
             static int ueberhang;
             static readonly V3[] fu = new V3[HindernisKern.FresnelN];
@@ -437,7 +437,7 @@ namespace Materialklang
                     ps[j + 1] = ks; py[j + 1] = ky; pc[j + 1] = kco; pr[j + 1] = kr;
                 }
                 var erg = HindernisKern.Rechnen(V(a), V(b), ps, py, n, f0, f1, f2, hs, hy, ba, bb);
-                // 0.8.6 (Streets 10.11.2026, BTR hinter Haeuserreihen): Bebauung nach ISO 9613-2 Anhang A.3 (HindernisKern.Haus). Die Collider
+                // 0.8.8 (Streets 10.11.2026, BTR hinter Haeuserreihen): Bebauung nach ISO 9613-2 Anhang A.3 (HindernisKern.Haus). Die Collider
                 // der ersten und letzten Huellecke (hs/hy sind die Ecken aus Rechnen) zaehlen nicht noch einmal; Gelaende ist keine Bebauung.
                 int nk = 0;
                 for (int v = 1; v <= erg.Kanten; v++)
@@ -459,7 +459,7 @@ namespace Materialklang
                 double ds = schritt / Math.Max(1e-3, Math.Max(Math.Abs(ux), Math.Abs(uz)));
                 HindernisKern.HausDazu(ref erg, HausAn == null || HausAn.Value ? HindernisKern.Bebaut(V(a), V(b), ps, py, pBau, n, ds) : 0);
                 for (int j = 0; j < nk; j++) kc[j] = null;
-                // 0.8.6 Klang-Log: massgebliche Kante = hoechster Profilpunkt ueber der Sichtlinie, Endpunkte ueber dem Boden
+                // 0.8.8 Klang-Log: massgebliche Kante = hoechster Profilpunkt ueber der Sichtlinie, Endpunkte ueber dem Boden
                 double bestU = double.NegativeInfinity; int bi = -1;
                 for (int i = 0; i < n; i++)
                 {
@@ -499,7 +499,7 @@ namespace Materialklang
                     var bnd = c.bounds;
                     if (Schmal(bnd, px, pz, lam)) continue;
                     if (t.point.y > linie && bnd.min.y > linie + Innen) continue;   // haengt ueber der Linie: Schall geht darunter durch
-                    // 0.8.6 (Ground Zero 09.11.2026 MARK 8-14, V-Ex-Taxi 47-94 m bei freier Sicht: "top 8.2-9.4 m above the line" ->
+                    // 0.8.8 (Ground Zero 09.11.2026 MARK 8-14, V-Ex-Taxi 47-94 m bei freier Sicht: "top 8.2-9.4 m above the line" ->
                     // 15-17 dB, 1-2 m daneben 5 dB): die Huelle des Colliders reicht bis unter die Linie (Baum mit Stamm + Krone in einem
                     // Collider, Vordach/Bruecke/Werbetafel am Mast, Gebaeude mit Durchgang), an DIESER Stelle ist unter der Oberflaeche
                     // aber Luft. Strahl von der Sichtlinie nach oben gegen genau diesen Collider: trifft er eine Unterseite unterhalb der

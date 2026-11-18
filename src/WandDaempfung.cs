@@ -34,7 +34,7 @@ namespace Materialklang
     //     Flugzeug und Moerser-Pfeifen (in der Luft): nur das Stueck bis 40 m vor dem Ohr wird gemessen (Dach/Decke ueber dir).
     //   - Eigene Huelle: Flaechen naeher als 'ignore surfaces near the source' an der Quelle und die Collider des eigenen Fahrzeugs
     //     (V-Ex, BTR, Lok) bzw. einer kleinen Requisite (Elternobjekt < 8 m, <= 64 Collider) zaehlen nicht.
-    //  0.8.6 (Streets 09.11.: "mitten im Gebaeude, der BTR kommt direkt durch die Waende statt durch Tueren und Fenster"):
+    //  0.8.8 (Streets 09.11.: "mitten im Gebaeude, der BTR kommt direkt durch die Waende statt durch Tueren und Fenster"):
     //   - Umweg = echter Raumweg (Raumweg.Frei, RaumwegFrei.cs): Routen des Spiels fuer das Raumpaar Quelle/Hoerer bzw. der Ersatzweg
     //     ueber die Hindernisse, je Band energetisch zur Wand summiert (WandDaempfungKern.SummeWege). Der pauschale Umweg (15/25 dB)
     //     bleibt nur, wo es keinen Raumweg gibt (gleicher Innenraum, Raumdaten fehlen). Beide drinnen ohne Route: nur die Wand.
@@ -48,8 +48,8 @@ namespace Materialklang
     {
         internal static ConfigEntry<bool> Aktiv;
         internal static ConfigEntry<float> BudgetMs, Takt, UmwegDraussen, UmwegZwischen, NahQuelle, GrundDraussen;
-        internal static ConfigEntry<bool> HoerAn;   // 0.8.6
-        internal static ConfigEntry<bool> BodenAn;  // 0.8.6: Boden unter dem Weg ist keine Wand
+        internal static ConfigEntry<bool> HoerAn;   // 0.8.8
+        internal static ConfigEntry<bool> BodenAn;  // 0.8.8: Boden unter dem Weg ist keine Wand
         internal static ConfigEntry<bool> LuftAn;   // btrfern (16.11.): Luftdaempfung je Band (WandDaempfungKern.Luft)
         internal static ConfigEntry<int> ProBild;
 
@@ -66,16 +66,16 @@ namespace Materialklang
             public bool Himmel, Tot, EigenGeprueft, Gesperrt;
             public Transform EigenWurzel;
             public HashSet<int> Eigen;
-            public Vector3 MotorQ = new Vector3(float.NaN, 0, 0), MotorA; public float MotorUeberBoden = float.NaN;   // 0.8.6: Messpunkt Motorraum
-            public float MotorBoden = float.NaN;   // 0.8.6: Boden unter dem Fahrzeug (Weltkoordinate y)
-            public float BodenA = float.NaN, BodenB = float.NaN; public Vector3 BodenQ = new Vector3(float.NaN, 0, 0);   // 0.8.6: Boden unter A/B (Boden unter der Linie)
+            public Vector3 MotorQ = new Vector3(float.NaN, 0, 0), MotorA; public float MotorUeberBoden = float.NaN;   // 0.8.8: Messpunkt Motorraum
+            public float MotorBoden = float.NaN;   // 0.8.8: Boden unter dem Fahrzeug (Weltkoordinate y)
+            public float BodenA = float.NaN, BodenB = float.NaN; public Vector3 BodenQ = new Vector3(float.NaN, 0, 0);   // 0.8.8: Boden unter A/B (Boden unter der Linie)
             public int BodenLinien, BodenTreffer; public bool BodenGilt;
-            public double KalDb; public string KalText;   // 0.8.6: Kalibrierung der Quellpegel
+            public double KalDb; public string KalText;   // 0.8.8: Kalibrierung der Quellpegel
             public WandFilter F;
             public string Grund;                          // warum kein Filter (2D, mehrere Quellen, bypass)
-            // 0.8.6: zusammengehoerige Quellen an einem Objekt (ein Filter), Raumweg und Richtung
+            // 0.8.8: zusammengehoerige Quellen an einem Objekt (ein Filter), Raumweg und Richtung
             public bool Gemeinsam; public readonly List<AudioSource> Quellen = new List<AudioSource>(2);
-            public int FreieLinien;            // 0.8.6: freie Linien, die mit Ersatzweg nicht zur Wand zaehlen (NurDurch)
+            public int FreieLinien;            // 0.8.8: freie Linien, die mit Ersatzweg nicht zur Wand zaehlen (NurDurch)
             public Raumweg.FreiWeg Frei; public Raumweg.FreiArt Art; public double R0 = -1, R1 = -1, R2 = -1;
             public Transform T, Eltern; public Vector3 BasisLokal, Geschrieben; public bool Verschoben;
             public int Schieben; public string SchiebGrund;   // 0 ungeprueft, 1 darf, -1 nicht (Grund)
@@ -91,16 +91,16 @@ namespace Materialklang
             public string Kette;   // mehrwand: Kette getrennter Trennwaende der mittleren Linie (Log), null = eine Konstruktion
             // Log
             public float LogZeit = -999f; public double LogL0 = -1; public float LogLp = -1f;
-            // 0.8.6: Hoerbarkeit gegen das Grundgeraeusch (QuellPegelKern)
+            // 0.8.8: Hoerbarkeit gegen das Grundgeraeusch (QuellPegelKern)
             public PegelArt Pegel = PegelArt.Unbekannt; public float MaxD;
-            public double Bezug = double.NaN;   // 0.8.6 Abstandskurve: Bezugsabstand der Kurve (m), fuer die Kalibrierung
+            public double Bezug = double.NaN;   // 0.8.8 Abstandskurve: Bezugsabstand der Kurve (m), fuer die Kalibrierung
             public bool HoerGilt, HoerDraussen; public double HoerDb, HoerGrund, LpOhne = 22000;
             public readonly double[] HoerUeber = new double[3];
             public double A0, A1, A2;   // btrfern: Luftdaempfung je Band in der gespielten Daempfung (dB, Log)
         }
 
         static readonly Dictionary<int, Eintrag> alle = new Dictionary<int, Eintrag>(256);
-        static readonly Dictionary<int, Eintrag> gruppen = new Dictionary<int, Eintrag>(16);   // 0.8.6: gemeinsame Eintraege je Objekt
+        static readonly Dictionary<int, Eintrag> gruppen = new Dictionary<int, Eintrag>(16);   // 0.8.8: gemeinsame Eintraege je Objekt
         static readonly List<Eintrag> liste = new List<Eintrag>(256);
         static int zeiger;
         static bool tote, gestoert, abbauOffen;
@@ -133,7 +133,7 @@ namespace Materialklang
         static int dMess, dSofort, dGedaempft, dFrei, dOhne, dBudget, dFilter, dEntfernt;
         static int dGedreht, dZurueck, dUebernommen, dWinkelN; static double dWinkel, dWinkelMax;
         static double dSummeDb, dMaxDb;
-        static int dHoer, dHoerStumm, dHoerTief, dHoerLeiser; static double dHoerSummeDb;   // 0.8.6 Hoerbarkeit
+        static int dHoer, dHoerStumm, dHoerTief, dHoerLeiser; static double dHoerSummeDb;   // 0.8.8 Hoerbarkeit
         static readonly Hoerbarkeit.Baender hoerErg = new Hoerbarkeit.Baender();
 
         // =========================================================================================
@@ -162,16 +162,16 @@ namespace Materialklang
             UmwegDraussen = c.Bind(s, "Wall damping: detour outdoors (dB)", 15f,
                 new ConfigDescription("Sound also bends around an obstacle (house, car, hill). Loss of that detour at 250 Hz when you and the source are in the same room " +
                     "or both outdoors, +3 dB per octave above (Maekawa). Assumption: ISO 9613-2 caps the screening of one edge at 20 dB; typical 10-20 dB. " +
-                    "The wall can only make it quieter down to this detour. Since 0.8.6 only used where there is no room path (same indoor room, room data missing).", new AcceptableValueRange<float>(0f, 40f)));
+                    "The wall can only make it quieter down to this detour. Since 0.8.8 only used where there is no room path (same indoor room, room data missing).", new AcceptableValueRange<float>(0f, 40f)));
             UmwegZwischen = c.Bind(s, "Wall damping: detour between rooms (dB)", 25f,
                 new ConfigDescription("Detour loss at 250 Hz between different rooms of the game's room network (through doors/windows), +5 dB per further opening of the " +
                     "shortest route, +3 dB per octave. Assumption: ISO 9613-2 caps multiple diffraction at 25 dB. Rooms without any connection: walls only. " +
-                    "Since 0.8.6 only a fallback when the game's routes of the room pair are not loaded (otherwise the real routes are calculated).",
+                    "Since 0.8.8 only a fallback when the game's routes of the room pair are not loaded (otherwise the real routes are calculated).",
                     new AcceptableValueRange<float>(0f, 60f)));
             NahQuelle = c.Bind(s, "Wall damping: ignore surfaces near the source (m)", 1.0f,
                 new ConfigDescription("Surfaces closer than this to the source do not count (the barrel of a fire, the housing of a generator). Colliders of the source's " +
                     "own vehicle (V-Ex taxi, BTR, train) and of a small prop it sits in never count.", new AcceptableValueRange<float>(0f, 5f)));
-            // 0.8.6: Hoerbarkeit gegen das Grundgeraeusch (QuellPegelKern.cs)
+            // 0.8.8: Hoerbarkeit gegen das Grundgeraeusch (QuellPegelKern.cs)
             HoerAn = c.Bind(s, "Wall damping: real audibility", true,
                 "These sources carry far (taxi 200 m, BTR 600 m, train 1500 m, plane 2000 m), but the game has no background noise that would mask them. " +
                 "On = each source gets a real level (e.g. idling car 75 dB(A) at 1 m, BTR 107, generator 85, campfire 60, alarm 100 - table in the changelog), " +
@@ -218,7 +218,7 @@ namespace Materialklang
                 int id = s.GetInstanceID();
                 if (!alle.TryGetValue(id, out var e))
                 {
-                    // 0.8.6 gemeinsam: alle Quellen eines Objekts in einem Eintrag (ein Filter wirkt ohnehin auf alle)
+                    // 0.8.8 gemeinsam: alle Quellen eines Objekts in einem Eintrag (ein Filter wirkt ohnehin auf alle)
                     int gid = gemeinsam ? s.gameObject.GetInstanceID() : 0;
                     if (gemeinsam && gruppen.TryGetValue(gid, out var g) && !g.Tot) e = g;
                     if (e == null)
@@ -232,8 +232,8 @@ namespace Materialklang
                     if (e.Schieben == 1) e.Schieben = 0;   // neue Quelle am Objekt: Verschiebbarkeit neu pruefen
                 }
                 e.Weg = weg; e.Name = name ?? s.gameObject.name; e.Himmel = himmel; e.Tot = false;
-                if (pegel != PegelArt.Unbekannt || !e.Gemeinsam) e.Pegel = pegel;   // 0.8.6: Pegelannahme fuer die Hoerbarkeit
-                if (!double.IsNaN(bezug) || !e.Gemeinsam) e.Bezug = bezug;          // 0.8.6 Abstandskurve: Bezugsabstand der Kurve (Kalibrierung)
+                if (pegel != PegelArt.Unbekannt || !e.Gemeinsam) e.Pegel = pegel;   // 0.8.8: Pegelannahme fuer die Hoerbarkeit
+                if (!double.IsNaN(bezug) || !e.Gemeinsam) e.Bezug = bezug;          // 0.8.8 Abstandskurve: Bezugsabstand der Kurve (Kalibrierung)
                 if (eigen != null && e.EigenWurzel != eigen) { e.EigenWurzel = eigen; e.EigenGeprueft = false; }
                 if (sofort && Wirksam) Sofort(e);
             }
@@ -253,7 +253,7 @@ namespace Materialklang
             dEntfernt++;
         }
 
-        /// <summary>0.8.6: Eintrag aufgeben - Position zurueck, alle Schluessel (Quellen, Objekt) entfernen.</summary>
+        /// <summary>0.8.8: Eintrag aufgeben - Position zurueck, alle Schluessel (Quellen, Objekt) entfernen.</summary>
         static void Entsorgen(Eintrag e)
         {
             Zurueck(e);
@@ -287,7 +287,7 @@ namespace Materialklang
             {
                 if (laeuft) { handle.Complete(); laeuft = false; nFlug = 0; }
                 foreach (var e in liste) if (e.S == null) Entsorgen(e);
-                // 0.8.6: Schluessel zerstoerter Quellen (gemeinsame Eintraege)
+                // 0.8.8: Schluessel zerstoerter Quellen (gemeinsame Eintraege)
                 var weg = new List<int>();
                 foreach (var kv in alle) if (kv.Value.Tot) weg.Add(kv.Key);
                 foreach (int k in weg) alle.Remove(k);
@@ -322,7 +322,7 @@ namespace Materialklang
         // =========================================================================================
         internal static void Tick()
         {
-            if (markeNach >= 0f) MarkeNach();   // 0.8.6 Diagnose bei der Marke
+            if (markeNach >= 0f) MarkeNach();   // 0.8.8 Diagnose bei der Marke
             if (gestoert || (liste.Count == 0 && !laeuft)) return;
             long t0 = Laufzeit.Jetzt; int bild = Time.frameCount;
             try
@@ -332,7 +332,7 @@ namespace Materialklang
                 if (!Wirksam) { Abbauen(); return; }
                 if (abbauOffen) abbauOffen = false;
                 var h = FesteQuellen.Hoerer();
-                if (h != null) RichtungTakt(h.Value);    // 0.8.6: Richtung ueber die Oeffnung jedes Bild nachfuehren
+                if (h != null) RichtungTakt(h.Value);    // 0.8.8: Richtung ueber die Oeffnung jedes Bild nachfuehren
                 if (h == null || laeuft) return;
                 Planen(h.Value, t0);
             }
@@ -359,7 +359,7 @@ namespace Materialklang
                 e.MaxD = maxD;
                 var s = e.S;
                 if (e.Gesperrt && !KlangLog.An) continue;        // kein Filter moeglich: nur fuers Log messen
-                Vector3 q = Echt(e);                             // 0.8.6: ohne unsere Verschiebung
+                Vector3 q = Echt(e);                             // 0.8.8: ohne unsere Verschiebung
                 float d = Vector3.Distance(q, hoerer);
                 if (d > maxD) continue;                          // unhoerbar: Wert behalten, nicht messen
                 if (blend < 0.5f) { Neutral(e, "2D"); continue; }
@@ -385,12 +385,12 @@ namespace Materialklang
         static bool Strecke(Eintrag e, Vector3 q, Vector3 h, out Vector3 a, out Vector3 b, out float len)
         {
             b = h; a = q;
-            if (e.EigenWurzel != null && !e.Himmel) { q = Motorpunkt(e, q); a = q; }   // 0.8.6: Fahrzeug strahlt aus dem Motorraum
+            if (e.EigenWurzel != null && !e.Himmel) { q = Motorpunkt(e, q); a = q; }   // 0.8.8: Fahrzeug strahlt aus dem Motorraum
             Vector3 d = q - h;
             len = d.magnitude;
             if (len < MinD) return false;
             if (e.Himmel && len > HimmelM) { a = h + d * (HimmelM / len); len = HimmelM; }
-            // 0.8.6: Boden unter beiden Enden (Bodenlinie fuer WandDaempfungKern.BodenFiltern); Himmelsquellen: keiner
+            // 0.8.8: Boden unter beiden Enden (Bodenlinie fuer WandDaempfungKern.BodenFiltern); Himmelsquellen: keiner
             if (e.Himmel) e.BodenA = float.NaN;
             else if (e.EigenWurzel != null) e.BodenA = e.MotorBoden;
             else if ((a - e.BodenQ).sqrMagnitude > 0.04f || float.IsNaN(e.BodenQ.x)) { e.BodenQ = a; e.BodenA = Boden(a, 4f, e.Eigen); }
@@ -398,7 +398,7 @@ namespace Materialklang
             return true;
         }
 
-        /// <summary>0.8.6: Boden unter p (Strahl nach unten bis weit m, ohne eigene Collider), NaN = keiner.</summary>
+        /// <summary>0.8.8: Boden unter p (Strahl nach unten bis weit m, ohne eigene Collider), NaN = keiner.</summary>
         static float Boden(Vector3 p, float weit, HashSet<int> eigen)
         {
             int maske = (int)LayersMaskController.HighPolyWithTerrainMask;
@@ -422,7 +422,7 @@ namespace Materialklang
         }
         static int hoererBodenBild = -1; static Vector3 hoererBodenPos; static float hoererBoden = float.NaN;
 
-        // 0.8.6 (Ground Zero 09.11.2026 MARK 10-14, Kaan: "auf freier Luftlinie zum Taxi"): die Quelle des V-Ex-Taxis
+        // 0.8.8 (Ground Zero 09.11.2026 MARK 10-14, Kaan: "auf freier Luftlinie zum Taxi"): die Quelle des V-Ex-Taxis
         // (WheelDrive.AudioSource "Toyota_Land_Cruiser_close") sitzt am Fahrzeug-Ursprung = auf der Strasse. Beleg: Taxi bei
         // (-20.8, 22.6, 115.0), Hoerer (25.7, 24.3, 108.5), Log d = 47.0 m bei 46.95 m waagerecht -> Hoehenunterschied 1.7 m =
         // Ohrhoehe. Die Messlinie lief damit vom Ohr bis auf den Asphalt und traf auf den letzten Metern Raeder, Karosserien der
@@ -561,7 +561,7 @@ namespace Materialklang
             Wege.TBeginn(b, a);   // Empfangsraum/Flanken = Raum des Hoerers
             bool mitteNahA = false, mitteNahB = false;
             int linien = 0;
-            // 0.8.6: Raum der Quelle vor den Linien (Boden unter der Linie nur, wenn beide draussen sind)
+            // 0.8.8: Raum der Quelle vor den Linien (Boden unter der Linie nur, wenn beide draussen sind)
             Lage(e, a);
             var hr0 = HoererRaum();
             e.BodenGilt = BodenAn != null && BodenAn.Value && e.Raum != null && e.Raum.IsValid && e.Raum.IsOutdoor && hr0 != null && hr0.IsOutdoor;
@@ -570,7 +570,7 @@ namespace Materialklang
             {
                 int nVor = Lesen(e, h, basis + (2 * k) * MaxT, len, false, nah, vorT, out bool vorVoll);
                 int nRueck = Lesen(e, h, basis + (2 * k + 1) * MaxT, len, true, nah, rueckT, out bool rueckVoll);
-                // 0.8.6: Boden unter dem Weg ist keine Wand (WandDaempfungKern.BodenFiltern): Treffer raus, Linie vom Boden unterbrochen
+                // 0.8.8: Boden unter dem Weg ist keine Wand (WandDaempfungKern.BodenFiltern): Treffer raus, Linie vom Boden unterbrochen
                 int boden = e.BodenGilt ? WandDaempfungKern.BodenFiltern(vorT, ref nVor, rueckT, ref nRueck, len, e.BodenA, e.BodenB) : 0;
                 if (boden > 0) { e.BodenLinien++; e.BodenTreffer += boden; }
                 if (k == 0) WandLinie.NahAnEnden(vorT, nVor, rueckT, nRueck, len, out mitteNahA, out mitteNahB);
@@ -605,7 +605,7 @@ namespace Materialklang
             }
             e.Aussage = true;
             e.W0 = wand[0]; e.W1 = wand[1]; e.W2 = wand[2];
-            // 0.8.6: echter Raumweg (Routen des Spiels / Ersatzweg) statt pauschalem Umweg - nur wenn die Wand ueberhaupt daempft
+            // 0.8.8: echter Raumweg (Routen des Spiels / Ersatzweg) statt pauschalem Umweg - nur wenn die Wand ueberhaupt daempft
             // (freie Linie: L = 0 dB, ganz gleich wie laut der Umweg ist)
             e.Art = Raumweg.FreiArt.Keine; e.R0 = e.R1 = e.R2 = -1;
             if (Math.Max(wand[0], Math.Max(wand[1], wand[2])) > 0.05)
@@ -641,19 +641,19 @@ namespace Materialklang
             Luft(e, dEcht);
             for (int i = 0; i < 3; i++) gesamt[i] += luftTmp[i];
             WegeKern.Deckeln(gesamt, dyn);
-            // 0.8.6 Kennlinie (Hoerbarkeit.Kennlinie): laute Quellarten (BTR, Lok, Flugzeug, Alarm) im gespielten Mass gestaucht, sonst L0 x Lautheit
+            // 0.8.8 Kennlinie (Hoerbarkeit.Kennlinie): laute Quellarten (BTR, Lok, Flugzeug, Alarm) im gespielten Mass gestaucht, sonst L0 x Lautheit
             e.Gain = (float)WandDaempfungKern.Gain(QuellPegelKern.Gestaucht(e.Pegel, dEcht, gesamt[0], Physik.Lautheit.Value, Physik.KennKnie.Value, Physik.KennSteigung.Value), 1.0);
             // farbekennlinie (12.11.): Neigung mit dem Stauchungsfaktor der Lautstaerke (FarbeKennlinieKern.cs; leise Quellarten unter dem Knie: 1)
             double farbe = Physik.FarbeKennlinieAn != null && Physik.FarbeKennlinieAn.Value && QuellPegelKern.Gilt(e.Pegel)
                 ? FarbeKennlinie.Faktor(QuellPegelKern.FreiPegelA(e.Pegel, dEcht), gesamt[0], Physik.KennKnie.Value, Physik.KennSteigung.Value) : 1.0;
             e.Lp = Wege.Baender ? Wege.FitLp(farbe * Math.Max(0, e.L1 + e.A1 - e.L0 - e.A0), farbe * Math.Max(0, e.L2 + e.A2 - e.L0 - e.A0), eigenerFilter: true) : Physik.Abbildung((float)(gesamt[0] / dyn));
             if (e.L0 > 0.05) { dGedaempft++; dSummeDb += e.L0; dMaxDb = Math.Max(dMaxDb, e.L0); } else dFrei++;   // btrfern: Diagnose ohne Luft wie bisher
-            Hoeren(e, dEcht, dyn);   // 0.8.6: Verdeckung durch das Grundgeraeusch
-            // 0.8.6 Kalibrierung (Kalibrierung.cs): fester dB-Wert je Quellart, Bezug = gemessene Schritte
+            Hoeren(e, dEcht, dyn);   // 0.8.8: Verdeckung durch das Grundgeraeusch
+            // 0.8.8 Kalibrierung (Kalibrierung.cs): fester dB-Wert je Quellart, Bezug = gemessene Schritte
             e.KalDb = Kalibrierung.Db(e.Pegel, e.S, e.Bezug, KlangLog.An, out e.KalText);
             if (e.KalDb != 0) e.Gain = Mathf.Clamp(e.Gain * (float)Math.Pow(10, e.KalDb / 20), WandFilterKern.MinGain, WandFilterKern.MaxGain);
             Setzen(e, erst);
-            RichtungZiel(e, b, erst);   // 0.8.6: nach Setzen (Gesperrt bekannt)
+            RichtungZiel(e, b, erst);   // 0.8.8: nach Setzen (Gesperrt bekannt)
             Loggen(e, Vector3.Distance(Echt(e), b));
         }
 
@@ -670,7 +670,7 @@ namespace Materialklang
             e.A0 = luftTmp[0]; e.A1 = luftTmp[1]; e.A2 = luftTmp[2];
         }
 
-        // 0.8.6 (Meldung Streets 09.11.2026 "harter Cut am Taxi"): die Wand sprang zwischen 60 und 8,2 dB, je nachdem ob eine der vier
+        // 0.8.8 (Meldung Streets 09.11.2026 "harter Cut am Taxi"): die Wand sprang zwischen 60 und 8,2 dB, je nachdem ob eine der vier
         // aeusseren Linien (Kreis 0,25 m) knapp ueber die Kante des Platzes ging: 10 lg(1 / 0,15) = 8,2 dB. Fuenf Linien in 0,25 m sind
         // keine Messung der Fresnelzone (bei 100 m und 250 Hz rund 6 m Radius) - ob eine davon frei ist, ist an der Schattengrenze Zufall.
         // Mit Ersatzweg traegt die Beugung ueber die Hindernisse (ISO 9613-2, stetig an der Schattengrenze) den Schall auf und knapp
@@ -693,7 +693,7 @@ namespace Materialklang
             e.W0 = wand[0]; e.W1 = wand[1]; e.W2 = wand[2];
         }
 
-        /// <summary>0.8.6: Hoerbarkeit je Band gegen das Grundgeraeusch (QuellPegelKern.Rechnen): Lautstaerke = lautestes Band, Tiefpass an die
+        /// <summary>0.8.8: Hoerbarkeit je Band gegen das Grundgeraeusch (QuellPegelKern.Rechnen): Lautstaerke = lautestes Band, Tiefpass an die
         /// hoerbaren Baender. Ohne Pegelart / aus: Gain und Tiefpass bleiben wie gemessen. d = gerade Entfernung (echter Ort).</summary>
         static void Hoeren(Eintrag e, float d, float dyn)
         {
@@ -709,7 +709,7 @@ namespace Materialklang
             for (int i = 0; i < 3; i++) e.HoerUeber[i] = hoerErg.Ueber[i];
             luftTmp[0] = e.A0; luftTmp[1] = e.A1; luftTmp[2] = e.A2;
             WandDaempfungKern.LuftInG(hoerErg, luftTmp);   // btrfern: Luft in die gespielte Daempfung je Band, nicht in die Verdeckung
-            double alt = QuellPegelKern.Gestaucht(e.Pegel, d, gesamt[0], Physik.Lautheit.Value, Physik.KennKnie.Value, Physik.KennSteigung.Value);   // 0.8.6 Kennlinie
+            double alt = QuellPegelKern.Gestaucht(e.Pegel, d, gesamt[0], Physik.Lautheit.Value, Physik.KennKnie.Value, Physik.KennSteigung.Value);   // 0.8.8 Kennlinie
             e.HoerDb = hoerErg.Lautstaerke;
             e.Gain = (float)WandDaempfungKern.Gain(e.HoerDb, 1.0);
             var f = Wege.Frequenzen();
@@ -739,7 +739,7 @@ namespace Materialklang
             return n;
         }
 
-        /// <summary>0.8.6: Hoerer in einem Aussenraum der Raumdaten (Kalibrierung: Mixer-Snapshot "Outdoor").</summary>
+        /// <summary>0.8.8: Hoerer in einem Aussenraum der Raumdaten (Kalibrierung: Mixer-Snapshot "Outdoor").</summary>
         internal static bool HoererDraussen()
         {
             var r = HoererRaum();
@@ -805,7 +805,7 @@ namespace Materialklang
             quellenPuffer.Clear();
             s.GetComponents(quellenPuffer);
             int n = quellenPuffer.Count;
-            // 0.8.6: zusammengehoerige Quellen (gemeinsam, gleicher Ort) teilen den Filter; eine fremde Quelle am Objekt sperrt weiter
+            // 0.8.8: zusammengehoerige Quellen (gemeinsam, gleicher Ort) teilen den Filter; eine fremde Quelle am Objekt sperrt weiter
             bool fremd = false, umgehen = false;
             foreach (var x in quellenPuffer) { if (x == null) continue; if (!e.Quellen.Contains(x)) fremd = true; if (x.bypassEffects) umgehen = true; }
             quellenPuffer.Clear();
@@ -835,11 +835,11 @@ namespace Materialklang
                 e.Hat = false;
                 if (k.Durchgang || e.S == null || !e.S.isPlaying) FilterWeg(e);
             }
-            foreach (var e in liste) { e.Richten = false; if (e.Verschoben) Zurueck(e); }   // 0.8.6
+            foreach (var e in liste) { e.Richten = false; if (e.Verschoben) Zurueck(e); }   // 0.8.8
         }
 
         // =========================================================================================
-        //  0.8.6: Quellen eines Eintrags, echte Position, Richtung ueber die Oeffnung
+        //  0.8.8: Quellen eines Eintrags, echte Position, Richtung ueber die Oeffnung
         // =========================================================================================
 
         /// <summary>Spielt eine der Quellen (aktiv)? maxD/blend = groesste Reichweite / groesster Raumanteil der spielenden.</summary>
@@ -1058,14 +1058,14 @@ namespace Materialklang
         // =========================================================================================
         static void Loggen(Eintrag e, float d)
         {
-            // 0.8.6: Fahrzeuge/Skriptquellen so weit wie ihre [Vehicle]/[Scripted]-Zeile (bis 1,25 x Reichweite) - der BTR in 300-600 m
+            // 0.8.8: Fahrzeuge/Skriptquellen so weit wie ihre [Vehicle]/[Scripted]-Zeile (bis 1,25 x Reichweite) - der BTR in 300-600 m
             // stand dort mit "see [Walls]", die [Walls]-Zeile fiel aber am Log-Radius (300 m) weg
             float radius = KlangLog.Radius.Value;
             if (e.Weg == "vehicle" || e.Weg == "scripted") radius = Math.Max(radius, 1.25f * e.MaxD);
             if (!KlangLog.An || d > radius) return;
             float jetzt = Time.realtimeSinceStartup;
             if (jetzt - e.LogZeit < 1f) return;
-            double lw = e.HoerGilt ? e.HoerDb : Math.Min(e.L0, Physik.Dynamik.Value);   // 0.8.6: mit Hoerbarkeit zaehlt die angewandte Lautstaerke
+            double lw = e.HoerGilt ? e.HoerDb : Math.Min(e.L0, Physik.Dynamik.Value);   // 0.8.8: mit Hoerbarkeit zaehlt die angewandte Lautstaerke
             bool aenderung = Math.Abs(lw - e.LogL0) > 1.0 || (e.LogLp > 0 && Math.Abs(Math.Log(e.Lp / e.LogLp)) > 0.15);
             if (!aenderung && jetzt - e.LogZeit < 5f) return;
             e.LogZeit = jetzt; e.LogL0 = lw; e.LogLp = e.Lp;
@@ -1078,7 +1078,7 @@ namespace Materialklang
             var s = e.S;
             var sb = new StringBuilder(320);
             sb.Append("[Walls] ").Append(e.Name);
-            // 0.8.6 (Ground Zero 09.11.2026 22:22, sieben 'barrel_fire_sound'): Instanz und echter Ort, damit gleichnamige Quellen unterscheidbar sind
+            // 0.8.8 (Ground Zero 09.11.2026 22:22, sieben 'barrel_fire_sound'): Instanz und echter Ort, damit gleichnamige Quellen unterscheidbar sind
             if (s != null) { sb.Append(" #").Append(s.GetInstanceID()); if (s.gameObject.name != e.Name) sb.Append(" '").Append(s.gameObject.name).Append('\''); }
             sb.Append(" (").Append(e.Weg).Append(", clip ").Append(s != null && s.clip != null ? s.clip.name : "-").Append(')');
             sb.Append(" | d=").Append(d.ToString("F1", inv)).Append(" m at ");
@@ -1109,7 +1109,7 @@ namespace Materialklang
             else sb.Append(" | centre line clear");
             sb.Append(" | walls ").Append(e.W0.ToString("F1", inv)).Append('/').Append(e.W1.ToString("F1", inv)).Append('/').Append(e.W2.ToString("F1", inv)).Append(" dB");
             if (e.Kette != null) sb.Append(" |").Append(e.Kette);   // mehrwand
-            // 0.8.6: echter Raumweg (Routen des Spiels / ueber die Hindernisse) statt pauschalem Umweg
+            // 0.8.8: echter Raumweg (Routen des Spiels / ueber die Hindernisse) statt pauschalem Umweg
             if (e.Art == Raumweg.FreiArt.Route || e.Art == Raumweg.FreiArt.Ersatz)
                 sb.Append(e.Art == Raumweg.FreiArt.Route ? " + room path through the openings (" + e.Frei.Routen + " game routes) " : " + over the obstacles (no game route) ")
                   .Append(e.R0.ToString("F1", inv)).Append('/').Append(e.R1.ToString("F1", inv)).Append('/').Append(e.R2.ToString("F1", inv)).Append(" dB");
@@ -1124,12 +1124,12 @@ namespace Materialklang
             sb.Append(" -> ").Append(e.L0.ToString("F1", inv)).Append('/').Append(e.L1.ToString("F1", inv)).Append('/').Append(e.L2.ToString("F1", inv)).Append(" dB");
             if (e.A0 + e.A1 + e.A2 > 0.005)   // btrfern: Luft je Band (ISO 9613-1, Raid-Wetter), nur im gespielten Klang
                 sb.Append(" + air ").Append(e.A0.ToString("F1", inv)).Append('/').Append(e.A1.ToString("F1", inv)).Append('/').Append(e.A2.ToString("F1", inv)).Append(" dB");
-            // 0.8.6 Kennlinie: Wand im gespielten Mass (laute Quellarten gestaucht, sonst L0 x Lautheit)
+            // 0.8.8 Kennlinie: Wand im gespielten Mass (laute Quellarten gestaucht, sonst L0 x Lautheit)
             double vdb = QuellPegelKern.Gestaucht(e.Pegel, d, Math.Min(e.L0 + e.A0, Physik.Dynamik.Value),   // btrfern: mit Luft wie angewandt
                  Physik.Lautheit.Value, Physik.KennKnie.Value, Physik.KennSteigung.Value);   // 10.11.: wie angewandt (Deckel)
             if (e.HoerGilt)
             {
-                // 0.8.6: Hoerbarkeit je Band gegen das Grundgeraeusch
+                // 0.8.8: Hoerbarkeit je Band gegen das Grundgeraeusch
                 sb.Append(" | ").Append(QuellPegelKern.Name(e.Pegel)).Append(' ').Append(QuellPegelKern.DbA(e.Pegel).ToString("0", inv)).Append(" dB(A) @1 m vs background ")
                   .Append(e.HoerGrund.ToString("0", inv)).Append(" dB(A) ").Append(e.HoerDraussen ? "outdoors" : "indoors");
                 sb.Append(" | audible 250/1k/4k:");
@@ -1145,12 +1145,12 @@ namespace Materialklang
                   .Append(", low-pass ").Append(e.Lp >= 20000f ? "open" : (e.Lp / 1000f).ToString("0.00", inv) + " kHz");
                 if (e.Lp < e.LpOhne - 0.5f) sb.Append(" (walls alone ").Append(e.LpOhne >= 20000f ? "open" : (e.LpOhne / 1000f).ToString("0.00", inv) + " kHz").Append(')');
             }
-            if (e.KalText != null) sb.Append(e.KalText);   // 0.8.6 Kalibrierung
+            if (e.KalText != null) sb.Append(e.KalText);   // 0.8.8 Kalibrierung
             else
             sb.Append(" | volume ").Append((-vdb).ToString("F1", inv)).Append(" dB (x loudness ").Append(Physik.Lautheit.Value.ToString("0.##", inv)).Append(')')
               .Append(", low-pass ").Append(e.Lp >= 20000f ? "open" : (e.Lp / 1000f).ToString("0.00", inv) + " kHz");
             if (e.Gesperrt) sb.Append(" | NOT applied: ").Append(e.Grund);
-            // 0.8.6: Richtung
+            // 0.8.8: Richtung
             if (e.Richten)
             {
                 if (e.Schieben < 0) sb.Append(" | direction: source (object not movable: ").Append(e.SchiebGrund).Append(')');
@@ -1169,7 +1169,7 @@ namespace Materialklang
             => sb.Append('(').Append(p.x.ToString("F1", inv)).Append(", ").Append(p.y.ToString("F1", inv)).Append(", ").Append(p.z.ToString("F1", inv)).Append(')');
 
         // =========================================================================================
-        //  0.8.6 Diagnose bei der Marke (Ground Zero 09.11.2026 22:22:48 MARK 1, Kaan: "direkt neben dem Feuer kein Ton", 12 m weiter
+        //  0.8.8 Diagnose bei der Marke (Ground Zero 09.11.2026 22:22:48 MARK 1, Kaan: "direkt neben dem Feuer kein Ton", 12 m weiter
         //  Ton). Die [Walls]-Zeilen zeigen nur, was die Rechnung meint (same room, 0 dB, Tiefpass offen) - nicht, was Unity mit der
         //  Quelle tut. Je eingetragene Quelle in der Naehe eine Zeile mit dem Ist-Zustand: echter Ort und Ort des Objekts, isPlaying,
         //  isVirtual (Stimmenlimit), enabled/aktiv, Wiedergabeposition, volume, priority, spatialize, Mischpult-Gruppe, Kurvenwert

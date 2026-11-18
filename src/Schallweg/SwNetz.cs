@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace Materialklang.Schallweg
 {
     // ------------------------------------------------------------------------------------------
-    //  0.8.6 Wegsuche (Etappe 3): Datentypen der Wegsuche im Plugin. Portierung aus dem eigenen Entwicklungswerkzeug Wegsuche (Etappe 2, ausserhalb des Plugins)
+    //  0.8.8 Wegsuche (Etappe 3): Datentypen der Wegsuche im Plugin. Portierung aus dem eigenen Entwicklungswerkzeug Wegsuche (Etappe 2, ausserhalb des Plugins)
     //  (Mathe.cs, Netz.cs, Wegenetz.cs, Bvh.cs, Suche.cs) nach net471 - gleiche Rechnung, nur Abfragen (der Bau bleibt im Werkzeug
     //  bzw. spaeter im Leser). Keine Unity-Typen: laeuft im Arbeitsfaden und im Offline-Test.
     // ------------------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ namespace Materialklang.Schallweg
         public List<KeyValuePair<string, double>> Waende = new List<KeyValuePair<string, double>>();
         public double Roh; public double[] Rohr = new double[3], Knick = new double[3], Tuer = new double[3]; public int Tueren; public double GangM;
         public List<KeyValuePair<V, double>> GangP = new List<KeyValuePair<V, double>>(); public double[] OhneRohr = new double[3]; public bool RohrWeg;
-        /// <summary>0.8.6: Summe der UTD-Kanten vor der Mehrfachbeugungs-Grenze (Log), dieselbe ohne den Rohr-Knick; Gedeckelt = Grenze griff.</summary>
+        /// <summary>0.8.8: Summe der UTD-Kanten vor der Mehrfachbeugungs-Grenze (Log), dieselbe ohne den Rohr-Knick; Gedeckelt = Grenze griff.</summary>
         public double[] KantenEP = new double[3], KantenOhneKnick = new double[3]; public bool Gedeckelt;
         /// <summary>wegsuche-use: Kopie fuer einen Zwischenstand (Felder, die RohrTeilen aendert, eigen; Punkte/Knoten werden nach Bewerten nicht mehr geaendert).</summary>
         public Weg Kopie()

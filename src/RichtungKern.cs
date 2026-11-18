@@ -3,7 +3,7 @@ using System;
 namespace Materialklang
 {
     // ------------------------------------------------------------------------------------------
-    // 0.8.6 - Richtung ueber die Oeffnung und Beugung ueber Hindernisse, wenn das Spiel keinen Raumweg kennt.
+    // 0.8.8 - Richtung ueber die Oeffnung und Beugung ueber Hindernisse, wenn das Spiel keinen Raumweg kennt.
     // Reine Rechnung ohne Unity (Offline-Test). Spiel-Teil: Richtung.cs (Richtung), Raumweg.cs (Ersatzweg).
     //
     // 1. Richtung (Meldung Ground Zero 09.11.2026, MARK 3, "die Geraeusche durch die Waende sind lauter als durch die moeglichen
@@ -34,7 +34,7 @@ namespace Materialklang
     //    (zwei und mehr Kanten, e = Abstand erste-letzte Kante), z = Umweg ueber die Kanten, Kmet Gl. (18); Deckel 20 dB (eine
     //    Kante) bzw. 25 dB (mehrere). Kanten = obere konvexe Huelle ("Gummiband") des Hoehenprofils zwischen den Endpunkten
     //    (Spiel: Strahlen von oben auf Dach/Gelaende). Seitliche Beugung um Gebaeudeecken ist nicht enthalten (eher zu leise).
-    //    0.8.6 (Streets 10.11.): dazu die Bebauung unter dem Gummiband nach ISO 9613-2 Anhang A.3 (HindernisKern.Haus, bis 10 dB).
+    //    0.8.8 (Streets 10.11.): dazu die Bebauung unter dem Gummiband nach ISO 9613-2 Anhang A.3 (HindernisKern.Haus, bis 10 dB).
     //    Beide Raeume drinnen ohne Route: bleibt dicht.
     // ------------------------------------------------------------------------------------------
 
@@ -377,13 +377,13 @@ namespace Materialklang
         public V3 ErsteKante, LetzteKante;
         public double Db0, Db1, Db2;         // Dz je Band (Bezug / 1 kHz / 4 kHz), gedeckelt
         public double HoechsteKante;         // hoechster Huellpunkt ueber der Sichtlinie (m), Log
-        public double Streif;                // 0.8.6: freie Linie knapp ueber einer Kante: Wegdifferenz (m, > 0), 0 = keine; Db0..2 dann > 0
-        // 0.8.6 Klang-Log (Ground Zero 09.11. MARK 8-14): massgebliche Kante (hoechster Profilpunkt ueber der Sichtlinie)
+        public double Streif;                // 0.8.8: freie Linie knapp ueber einer Kante: Wegdifferenz (m, > 0), 0 = keine; Db0..2 dann > 0
+        // 0.8.8 Klang-Log (Ground Zero 09.11. MARK 8-14): massgebliche Kante (hoechster Profilpunkt ueber der Sichtlinie)
         public string KanteName;             // Collider (null = keiner / unbekannt)
         public double KanteUeber, KanteS;    // Hoehe ueber der Sichtlinie (m), waagerechter Abstand von a (m)
         public double AUeberBoden, BUeberBoden;   // Hoehe der Endpunkte ueber dem Boden (m, NaN = unbekannt)
         public int Ueberhang;                // Profilpunkte, an denen ein Collider nur ueber der Linie hing (verworfen)
-        // 0.8.6 (Streets 10.11.2026 "BTR durch Gebaeude"): Richtungskante (letzte Huellecke = erste Kante vom Hoerer aus) und Bebauung
+        // 0.8.8 (Streets 10.11.2026 "BTR durch Gebaeude"): Richtungskante (letzte Huellecke = erste Kante vom Hoerer aus) und Bebauung
         public double LetzteS;               // waagerechter Abstand der letzten Kante von a (m)
         public string LetzteName;            // Collider der letzten Kante (Log)
         public double Bebaut, Haus;          // bebaute Strecke auf der Linie ausser den Kanten-Gebaeuden (m), A_house (dB, in Db0..2 enthalten)
@@ -407,7 +407,7 @@ namespace Materialklang
                 x *= x;
                 c3 = (1 + x) / (1.0 / 3.0 + x);
             }
-            // 0.8.6 (Meldung Streets 09.11.2026 "harter Cut am Taxi"): Gl. (14) springt an der Schattengrenze von 0 auf 10 lg 3 = 4,8 dB
+            // 0.8.8 (Meldung Streets 09.11.2026 "harter Cut am Taxi"): Gl. (14) springt an der Schattengrenze von 0 auf 10 lg 3 = 4,8 dB
             // (Kante genau auf der Sichtlinie), obwohl sich das Schallfeld dort stetig aendert. Wie CNOSSOS-EU (Richtlinie (EU) 2015/996,
             // Anhang 2.5.6, Beugung: Delta = 10 lg(3 + 40/lambda * C'' * delta) fuer 40/lambda * C'' * delta >= -2, sonst 0) zaehlt eine
             // Kante knapp UNTER der Sichtlinie mit negativer Wegdifferenz weiter, bis das Argument 1 ist (0 dB): mit C2 = 20 bei
@@ -424,7 +424,7 @@ namespace Materialklang
 
         /// <summary>Gummiband von a nach b ueber das Profil: s[i] = waagerechter Abstand von a (0 &lt; s &lt; D), y[i] = Oberkante
         /// (Weltkoordinate y, NaN = nichts). Ergebnis mit Dz je Band (f0/f1/f2).</summary>
-        /// <remarks>0.8.6: bodenA/bodenB = Boden unter a und b (Weltkoordinate y, NaN = unbekannt). Ohne Kante ueber der Sichtlinie
+        /// <remarks>0.8.8: bodenA/bodenB = Boden unter a und b (Weltkoordinate y, NaN = unbekannt). Ohne Kante ueber der Sichtlinie
         /// zaehlt die Kante, an der die Linie am knappsten vorbeigeht, mit negativer Wegdifferenz (Dz, CNOSSOS-EU) - aber nur, wenn sie
         /// aus dem Boden herausragt: Punkte bis eine Wellenlaenge (Bezugsband) ueber der Bodenlinie a-b sind Bodenrauigkeit, kein
         /// beugendes Hindernis (ISO 9613-2 rechnet den Boden in A_gr, nicht in D_z). Gewicht smoothstep(Ueberstand / lambda), damit
@@ -482,7 +482,7 @@ namespace Materialklang
             return r;
         }
 
-        /// <summary>0.8.6: freie Sichtlinie knapp ueber einer herausragenden Kante -> Dz mit negativer Wegdifferenz (siehe Rechnen).</summary>
+        /// <summary>0.8.8: freie Sichtlinie knapp ueber einer herausragenden Kante -> Dz mit negativer Wegdifferenz (siehe Rechnen).</summary>
         static void Streifen(ref Hindernis r, V3 a, V3 b, double D, double[] s, double[] y, int n, double f0, double f1, double f2,
                              double bodenA, double bodenB)
         {
@@ -530,7 +530,7 @@ namespace Materialklang
         public const int FresnelN = 9;
         public const double FresnelZugabe = 1.3;
 
-        /// <summary>0.8.6: Polylinie unter der Sichtlinie a-b, so tief, wie eine Kante noch zaehlt (Streifen): z = lambda/10 im Bezugsband,
+        /// <summary>0.8.8: Polylinie unter der Sichtlinie a-b, so tief, wie eine Kante noch zaehlt (Streifen): z = lambda/10 im Bezugsband,
         /// also h(s) = sqrt(lambda/5 * s1 * s2 / D), mit Zugabe 1,3 (die Sehnen zwischen den Punkten liegen sonst ueber der Grenze).
         /// Strahlen entlang dieser Linie finden duenne Hindernisse knapp UNTER der Sichtlinie, die das Raster nicht trifft - sonst
         /// waere die Schattengrenze nur fuer Hindernisse stetig, die zufaellig auf einem Rasterpunkt liegen. Gibt FresnelN Punkte.</summary>
@@ -551,7 +551,7 @@ namespace Materialklang
             return FresnelN;
         }
 
-        /// <summary>0.8.6: Rasterpunkte des Hoehenprofils FEST IN DER WELT (Vielfache des Schritts auf der Hauptachse x oder z der Linie),
+        /// <summary>0.8.8: Rasterpunkte des Hoehenprofils FEST IN DER WELT (Vielfache des Schritts auf der Hauptachse x oder z der Linie),
         /// statt gleichmaessig zwischen den Endpunkten. Vorher (Stuetzstellen) wanderten alle Punkte mit jedem Schritt des Hoerers mit
         /// (Abstand = Laenge / (n + 1)) und trafen ein schmales Hindernis mal und mal nicht. Schritt 2 m, verdoppelt, bis hoechstens
         /// maxN Punkte noetig sind (beim Verdoppeln bleibt jeder zweite Punkt, wo er war). Ergebnis s aufsteigend (Abstand von a).</summary>
@@ -574,7 +574,7 @@ namespace Materialklang
             return n;
         }
 
-        // 0.8.6 (Meldung Streets 10.11.2026 00:03, "BTR ist durch die Waende zu hoeren, durch Gebaeude"): BTR 207-225 m entfernt hinter
+        // 0.8.8 (Meldung Streets 10.11.2026 00:03, "BTR ist durch die Waende zu hoeren, durch Gebaeude"): BTR 207-225 m entfernt hinter
         // mehreren Haeuserreihen, Abschirmung nur 12-25 dB (eine bzw. zwei Kanten des Gummibands: das hoechste Dach und das Dach vor dem
         // Hoerer), hoerbar +10..+19 dB ueber der Verdeckung. Gl. (14) kennt nur die Ecken der Huelle; jede weitere Haeuserreihe darunter
         // zaehlt nicht. ISO 9613-2:1996 Anhang A.3 (2024: A.4) "Housing": A_house,1 = 0,1 B d_b (dB), B = Bebauungsdichte (Grundflaeche

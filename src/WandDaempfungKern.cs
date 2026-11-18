@@ -49,7 +49,7 @@ namespace Materialklang
     internal static class WandDaempfungKern
     {
         public const int Linien = 5, MaxTreffer = 8, LogMax = 6;
-        /// <summary>0.8.6: Restenergie, ab der eine Linie als frei gilt (Daemmung unter 0,05 dB).</summary>
+        /// <summary>0.8.8: Restenergie, ab der eine Linie als frei gilt (Daemmung unter 0,05 dB).</summary>
         public const float FreiEnergie = 0.9886f;
         public static readonly float[] Gewicht = { 0.4f, 0.15f, 0.15f, 0.15f, 0.15f };
         public const float Kreis = 0.25f;
@@ -92,7 +92,7 @@ namespace Materialklang
             }
         }
 
-        /// <summary>0.8.6: Wand und echter Raumweg (Routen des Spiels durch Tueren/Fenster bzw. Beugung ueber die Hindernisse) je Band
+        /// <summary>0.8.8: Wand und echter Raumweg (Routen des Spiels durch Tueren/Fenster bzw. Beugung ueber die Hindernisse) je Band
         /// energetisch summiert - zwei parallele Wege wie bei Occluder-Quellen (WandZwischenRaeumen, "Stufe 1"). Freie Linie -> 0 dB,
         /// nie mehr als die Wand oder der Raumweg allein. route[b] &lt; 0 = kein Raumweg (dicht): nur die Wand.</summary>
         public static void SummeWege(double[] wand, double[] route, double dyn, double[] aus)
@@ -235,7 +235,7 @@ namespace Materialklang
         }
 
 
-        // ---------------------------------------------------------------- 0.8.6 Boden unter der Linie
+        // ---------------------------------------------------------------- 0.8.8 Boden unter der Linie
         // Meldung Streets 10.11.2026 00:03 (BTR 207-225 m, beide draussen): die Linien aus 0,75 m (Motorraum) zum Ohr (1,5 m) trafen
         // Gehweg, Fahrbahn und Kanaldeckel ('Nikitskaya_A_Sidewalk_02_BALLISTIC_soil' Soil 0.15 m 49 dB, '..._Road_02_BALLISTIC_asphalt',
         // '..._metalthick') - Bordsteine und Fahrbahnwoelbung ragen ueber 200 m um Dezimeter ueber eine so tiefe Linie. Das ist keine Wand,

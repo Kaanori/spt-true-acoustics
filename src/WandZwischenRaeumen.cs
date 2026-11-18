@@ -524,7 +524,7 @@ namespace Materialklang
                 for (int i = 0; i < ns; i++)
                 {
                     var sc = schichten[i];
-                    float db = Physik.DaemmungStueck(sc.Id, sc.G, sc.Dicke);   // 0.8.6: Tuer = ihr Blatt
+                    float db = Physik.DaemmungStueck(sc.Id, sc.G, sc.Dicke);   // 0.8.8: Tuer = ihr Blatt
                     sum += db;
                     BandDazu(sc.Id, sc.G, sc.Dicke);
                     LogStueck(sc.Id, sc.G, sc.Dicke, db, sc.Teile);
@@ -637,7 +637,7 @@ namespace Materialklang
             if (!gelaende && dicke > 1.5f) dicke = 2f * schale;     // wohl zwei getrennte Flaechen eines grossen Meshes
             if (Physik.An)
             {
-                // Einzelflaeche: Gruppendicke (Daemmung begrenzt selbst auf 2 mm); 0.8.6: Tuer-Collider = Blatt der Tuer
+                // Einzelflaeche: Gruppendicke (Daemmung begrenzt selbst auf 2 mm); 0.8.8: Tuer-Collider = Blatt der Tuer
                 float db = Physik.DaemmungStueck(id, g, einzeln ? dicke : Mathf.Max(dicke, 0.02f));
                 x += db;
                 BandDazu(id, g, einzeln ? dicke : Mathf.Max(dicke, 0.02f));
@@ -647,7 +647,7 @@ namespace Materialklang
             float s = Plugin.Oberflaeche[g].Value;
             if (g == (int)Gruppe.Door)
             {
-                // 0.8.6: Blatt der Tuer (Massengesetz, Bezugsband) als ganzes Stueck, ohne Anteil je Meter Strahllaenge
+                // 0.8.8: Blatt der Tuer (Massengesetz, Bezugsband) als ganzes Stueck, ohne Anteil je Meter Strahllaenge
                 float ts = TuerenFenster.TuerS(id);
                 if (ts >= 0f)
                 {

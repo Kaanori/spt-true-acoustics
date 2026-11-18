@@ -3,7 +3,7 @@ using System;
 namespace Materialklang
 {
     // =========================================================================================
-    //  0.8.6: Reihum-Abarbeitung fuer AudioSourceCulling (ohne Unity, im Offline-Test geprueft)
+    //  0.8.8: Reihum-Abarbeitung fuer AudioSourceCulling (ohne Unity, im Offline-Test geprueft)
     //
     //  Spielfehler (EFT 4.1.6, Assembly-CSharp, Typ AudioSourceCulling, Coroutine Work()):
     //    jedes Bild   num2 = _audioSources.Count - 1;  while (num2 >= 0 && num < int_1) { ... num2--; }  yield return null;

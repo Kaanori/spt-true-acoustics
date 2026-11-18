@@ -143,7 +143,7 @@ namespace Materialklang
                 var btr = AccessTools.DeclaredMethod(typeof(VehicleMovementSoundContext), "SetUpAudioSource");
                 if (btr == null) Plugin.Log.LogWarning("Fixed sources: VehicleMovementSoundContext.SetUpAudioSource not found (game update?) -> BTR range unchanged.");
                 else h.Patch(btr, postfix: new HarmonyMethod(typeof(FesteQuellen), nameof(NachBtrQuelle)));
-                // 0.8.6: BtrSoundController.Initialize ruft Init -> RunState(Started) (= SetUpAudioSource aller sechs Quellen) und ERST
+                // 0.8.8: BtrSoundController.Initialize ruft Init -> RunState(Started) (= SetUpAudioSource aller sechs Quellen) und ERST
                 // DANACH SetSpatialBlend(1f). Beim Einstellen sind die Quellen noch 2D -> "silent/invalid", nie verlaengert, nie gedaempft.
                 var blend = AccessTools.DeclaredMethod(typeof(VehicleMovementSoundContext), "SetSpatialBlend");
                 if (blend == null) Plugin.Log.LogWarning("Fixed sources: VehicleMovementSoundContext.SetSpatialBlend not found (game update?) -> BTR engine only set up at the next engine start.");
@@ -166,11 +166,11 @@ namespace Materialklang
             public float MaxAlt, MaxNeu, R0;
             public Func<double, double> AltF;   // x = d / MaxAlt
             public AnimationCurve Neu;          // x = d / MaxNeu
-            public UmgebungKern.Bezug Bez;      // 0.8.6 Abstandskurve: Bezugsabstand und woraus er stammt
+            public UmgebungKern.Bezug Bez;      // 0.8.8 Abstandskurve: Bezugsabstand und woraus er stammt
             public PegelArt Pegel = PegelArt.Unbekannt;
         }
 
-        /// <summary>0.8.6 Abstandskurve: Log-Teil "ref X m (Grund, Quellart; game curve flat to K m, old r0 R m, game vs real D dB)".</summary>
+        /// <summary>0.8.8 Abstandskurve: Log-Teil "ref X m (Grund, Quellart; game curve flat to K m, old r0 R m, game vs real D dB)".</summary>
         internal static string BezugText(UmgebungKern.Bezug b, PegelArt p, IFormatProvider inv)
         {
             var sb = new StringBuilder(120);
@@ -182,10 +182,10 @@ namespace Materialklang
             return sb.Append(')').ToString();
         }
 
-        /// <summary>0.8.6: Bezugsabstand fuer die Kalibrierung (unendlich = echte Pegel-Linie, die Kalibrierung laesst die Quelle aus).</summary>
+        /// <summary>0.8.8: Bezugsabstand fuer die Kalibrierung (unendlich = echte Pegel-Linie, die Kalibrierung laesst die Quelle aus).</summary>
         internal static double KalBezug(UmgebungKern.Bezug b) => b.Absolut ? double.PositiveInfinity : b.Ref;
 
-        /// <summary>0.8.6 Abstandskurve: Kurve mit Bezugsabstand und Abstandsgesetz der Quellart bauen (alle Wege dieses Abschnitts).</summary>
+        /// <summary>0.8.8 Abstandskurve: Kurve mit Bezugsabstand und Abstandsgesetz der Quellart bauen (alle Wege dieses Abschnitts).</summary>
         internal static KurvenPunkt[] KurveBauen(Func<double, double> altF, double maxAlt, double maxNeu, double trimDb, PegelArt art, AudioSource s, out UmgebungKern.Bezug bez)
             => UmgebungKern.Bauen(altF, maxAlt, maxNeu, trimDb, QuellPegelKern.Mass(art), Kalibrierung.UeberDb(art, s), out bez, QuellPegelKern.DbA(art), Kalibrierung.K());
 
@@ -236,7 +236,7 @@ namespace Materialklang
             try
             {
                 if (stand != gemeldetStand) { gemeldetStand = stand; Zusammenfassung(); }
-                // 0.8.6: erst wenn die Raid-Datei offen ist - vorher verwarf KlangLog.Text die Zeilen, 'geschrieben' merkte sie trotzdem
+                // 0.8.8: erst wenn die Raid-Datei offen ist - vorher verwarf KlangLog.Text die Zeilen, 'geschrieben' merkte sie trotzdem
                 // (Ground Zero 09.11.: Zusammenfassung 6 Zeilen vor "Sound log: ..." -> nie eine [Fixed]-Zeile)
                 if (artenOffen && KlangLog.An && KlangLog.Offen) { artenOffen = false; ArtenSchreiben(); }
             }
@@ -293,7 +293,7 @@ namespace Materialklang
         static void ArtenSchreiben()
         {
             var arten = new Dictionary<string, KeyValuePair<Meldung, int>>();
-            var stellen = new Dictionary<string, StringBuilder>();   // 0.8.6: Instanzen je Art (sieben Faesser gleichen Namens unterscheidbar)
+            var stellen = new Dictionary<string, StringBuilder>();   // 0.8.8: Instanzen je Art (sieben Faesser gleichen Namens unterscheidbar)
             var inv = CultureInfo.InvariantCulture;
             foreach (var m in meldungen.Values)
             {
@@ -315,7 +315,7 @@ namespace Materialklang
                   .Append(" m, ").Append(BezugText(m.Bez, m.Pegel, inv)).Append(" | game/new:");
                 foreach (double f in new[] { -3.0, -10.0, 0.5, 1.0, 2.0, 4.0 })
                 {
-                    double d = f < 0 ? -f : m.MaxAlt * f;   // 0.8.6: auch 3 und 10 m (Nahbereich, dort wirkte der Abstandsfehler)
+                    double d = f < 0 ? -f : m.MaxAlt * f;   // 0.8.8: auch 3 und 10 m (Nahbereich, dort wirkte der Abstandsfehler)
                     if (f < 0 && d >= m.MaxAlt * 0.5) continue;
                     if (d >= m.MaxNeu) break;
                     double alt = d >= m.MaxAlt ? 0 : m.AltF(d / m.MaxAlt);
@@ -328,7 +328,7 @@ namespace Materialklang
             }
         }
 
-        /// <summary>0.8.6: "#InstanceID 'Objektname' (x, y, z)" - dieselbe Kennung wie in den [Walls]-Zeilen.</summary>
+        /// <summary>0.8.8: "#InstanceID 'Objektname' (x, y, z)" - dieselbe Kennung wie in den [Walls]-Zeilen.</summary>
         internal static StringBuilder InstanzText(StringBuilder sb, UnityEngine.Object o, IFormatProvider inv)
         {
             if (o == null) return sb.Append('-');
@@ -360,7 +360,7 @@ namespace Materialklang
             public string[] Namen;
             public bool Umgestellt, Gesperrt, Vex, Fackel;
             public QuellKlasse Klasse;
-            public float StummSeit = -1f;   // 0.8.6 Diagnose: seit wann in Reichweite stumm (-1 = spielt / nicht betroffen)
+            public float StummSeit = -1f;   // 0.8.8 Diagnose: seit wann in Reichweite stumm (-1 = spielt / nicht betroffen)
             public bool StummGemeldet;      // eine Zeile je Quelle und Raid
         }
 
@@ -518,7 +518,7 @@ namespace Materialklang
                 if (e.Vex || k == QuellKlasse.Fahrzeug) FahrzeugMerken(e.S, m, e.Vex ? "V-Ex taxi" : "parked vehicle");
                 return;
             }
-            var pegelArt = e.Vex ? PegelArt.PkwLeerlauf : fackel ? PegelArt.Fackel : QuellPegelKern.AusKlasse(k, e.Namen);   // 0.8.6: Pegel fuer Hoerbarkeit + Abstandsgesetz
+            var pegelArt = e.Vex ? PegelArt.PkwLeerlauf : fackel ? PegelArt.Fackel : QuellPegelKern.AusKlasse(k, e.Namen);   // 0.8.8: Pegel fuer Hoerbarkeit + Abstandsgesetz
             var kk = KurveBauen(altF, e.MaxAlt, maxNeu, (k == QuellKlasse.Laut ? LautSignal.TrimDb.Value : TrimDb.Value), pegelArt, e.S, out var bez);
             var keys = new Keyframe[kk.Length];
             for (int i = 0; i < kk.Length; i++) keys[i] = new Keyframe(kk[i].T, kk[i].V, kk[i].In, kk[i].Out);
@@ -531,7 +531,7 @@ namespace Materialklang
             m.An = true; m.Klasse = k; m.MaxNeu = e.MaxNeu; m.R0 = e.R0; m.AltF = altF; m.Neu = e.Neu; m.Bez = bez; m.Pegel = pegelArt;
             Melden(e.S.GetInstanceID(), m);
             // 0.8.5: keine Okklusion im Spiel -> eigene Wanddaempfung (V-Ex: Collider des Taxis zaehlen nicht)
-            WandDaempfung.Melden(e.S, true, m.Weg, m.Art, eigen: e.Vex ? VexWurzel(e.S) : null, pegel: pegelArt, bezug: KalBezug(bez));   // 0.8.6: Pegel + Bezugsabstand
+            WandDaempfung.Melden(e.S, true, m.Weg, m.Art, eigen: e.Vex ? VexWurzel(e.S) : null, pegel: pegelArt, bezug: KalBezug(bez));   // 0.8.8: Pegel + Bezugsabstand
             if (k == QuellKlasse.Fahrzeug) FahrzeugMerken(e.S, m, e.Vex ? "V-Ex taxi" : "parked vehicle");
         }
 
@@ -592,7 +592,7 @@ namespace Materialklang
 
         static void FahrzeugTick()
         {
-            // 0.8.6: auch Quellen, die NICHT spielen, bekommen eine Zeile (mit Grund) - bis 0.8.5 hiess "spielt nicht" einfach "keine Zeile",
+            // 0.8.8: auch Quellen, die NICHT spielen, bekommen eine Zeile (mit Grund) - bis 0.8.5 hiess "spielt nicht" einfach "keine Zeile",
             // so blieb das stumme Ground-Zero-Taxi im Log unsichtbar. Erst ab offener Raid-Datei (sonst gingen die ersten Zeilen verloren).
             if (fahrzeuge.Count == 0 || !KlangLog.An || !KlangLog.Offen) return;
             float jetzt = Time.realtimeSinceStartup;
@@ -620,7 +620,7 @@ namespace Materialklang
         }
 
         // =========================================================================================
-        //  0.8.6: Diagnose - Schleife in Reichweite spielt nicht (frueher Neustart-Umweg 'NeustartTick')
+        //  0.8.8: Diagnose - Schleife in Reichweite spielt nicht (frueher Neustart-Umweg 'NeustartTick')
         //  Die Ursache (AudioSourceCulling schaltete nur die letzten 10 Eintraege, Audio-Reset beim Raidstart) behebt jetzt
         //  CullingFix (1. General). Hier wird nichts mehr geschaltet: bleibt eine Dauerschleife (playOnAwake + loop + Clip),
         //  deren Objekt aktiv ist, in ihrer Reichweite laenger als 2 s stumm, steht EINE Zeile je Quelle und Raid im Log -
@@ -718,7 +718,7 @@ namespace Materialklang
             BtrStellen(__instance, source);
         }
 
-        /// <summary>0.8.6: nach SetSpatialBlend die schon eingestellten Quellen dieses Kontexts neu stellen (jetzt 3D).</summary>
+        /// <summary>0.8.8: nach SetSpatialBlend die schon eingestellten Quellen dieses Kontexts neu stellen (jetzt 3D).</summary>
         static void NachBtrRaum(VehicleMovementSoundContext __instance)
         {
             if (btrGestoert || __instance == null || btrQuellen.Count == 0) return;
@@ -746,7 +746,7 @@ namespace Materialklang
                 gr = BtrGrenze != null ? BtrGrenze.Value : QuellRegelKern.BtrGrenze;   // BTR: eigene Grenze (600 m), Faktor wie alle Fahrzeuge
                 bool aktiv = Wirksam && FahrzeugAktiv.Value;
                 float trim = TrimDb.Value;
-                bool raeumlich = source.spatialBlend >= 0.5f;   // 0.8.6: 2D beim ersten Einstellen (siehe NachBtrRaum)
+                bool raeumlich = source.spatialBlend >= 0.5f;   // 0.8.8: 2D beim ersten Einstellen (siehe NachBtrRaum)
                 if (!btrQuellen.TryGetValue(id, out var q) || !ReferenceEquals(q.AltKurve, kurve) || q.MaxAlt != maxAlt || q.MinAlt != minAlt
                     || q.Faktor != (float)fak || q.Grenze != (float)gr || q.Aktiv != aktiv || q.Trim != trim || q.Raeumlich != raeumlich)
                 {
@@ -774,7 +774,7 @@ namespace Materialklang
                 }
                 source.rolloffMode = AudioRolloffMode.Custom;
                 // 0.8.5: Wanddaempfung (keine Okklusion im Spiel); der BTR selbst zaehlt nicht als Wand
-                // 0.8.6: die sechs Motor-/Fahrquellen eines Kontexts sitzen an einem Objekt und an einem Ort -> ein gemeinsamer Filter
+                // 0.8.8: die sechs Motor-/Fahrquellen eines Kontexts sitzen an einem Objekt und an einem Ort -> ein gemeinsamer Filter
                 WandDaempfung.Melden(source, q.Neu != null, "vehicle", "BTR " + source.gameObject.name, eigen: bsc.transform.root, gemeinsam: true, pegel: PegelArt.BtrMotor, bezug: q.Neu != null ? KalBezug(q.M.Bez) : double.NaN);
                 if (q.Neu == null)
                 {

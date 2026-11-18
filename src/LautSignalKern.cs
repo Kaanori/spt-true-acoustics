@@ -8,7 +8,7 @@ namespace Materialklang
     // ueber SourceOccluder in den Occluder haengt. Ihre Reichweite (40-120 m) und Kurve (linear auf 0) kommen aus der Szene.
     // Eine Alarmglocke/Sirene hat ~100-120 dB(A) in 1 m und ist im Freien hunderte Meter hoerbar (-6 dB je Verdopplung, dazu Luft
     // nach ISO 9613-1 - die rechnet True Acoustics im Occluder schon mit, ebenso Waende/Raeume).
-    // Neue Kurve wie Abschnitt 15 (UmgebungKern.Bauen): bis zum Bezugsabstand (0.8.6) die Spielkurve, dann 1/r, weicher Auslauf auf den letzten 25 %.
+    // Neue Kurve wie Abschnitt 15 (UmgebungKern.Bauen): bis zum Bezugsabstand (0.8.8) die Spielkurve, dann 1/r, weicher Auslauf auf den letzten 25 %.
     internal static class LautSignalKern
     {
         public const double Grenze = 600.0;     // m, groesste einstellbare Reichweite

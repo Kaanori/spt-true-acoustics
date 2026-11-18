@@ -163,7 +163,7 @@ namespace Materialklang
             return sb.ToString();
         }
 
-        /// <summary>0.8.6: Datei des laufenden Raids offen? (Text() verwirft Zeilen davor - wer nur einmal schreibt, muss darauf warten.)</summary>
+        /// <summary>0.8.8: Datei des laufenden Raids offen? (Text() verwirft Zeilen davor - wer nur einmal schreibt, muss darauf warten.)</summary>
         internal static bool Offen => offen;
 
         /// <summary>Eine Textzeile (z.B. "[Live] ...") in das Log, sobald eine Datei offen ist.</summary>
@@ -186,8 +186,8 @@ namespace Materialklang
             var lt = ba != null ? ba.ListenerTransform : null;
             if (lt != null) { var p = lt.position; e.PosX = p.x; e.PosY = p.y; e.PosZ = p.z; }
             schreiber.Einreihen(e);
-            if (lt != null) WandDaempfung.Marke(lt.position);   // 0.8.6: Ist-Zustand der Quellen ohne Spiel-Okklusion in der Naehe
-            if (lt != null) Wegsuche.Marke(lt.position);        // 0.8.6 Abschnitt 19: Wege der Quellen in der Naehe
+            if (lt != null) WandDaempfung.Marke(lt.position);   // 0.8.8: Ist-Zustand der Quellen ohne Spiel-Okklusion in der Naehe
+            if (lt != null) Wegsuche.Marke(lt.position);        // 0.8.8 Abschnitt 19: Wege der Quellen in der Naehe
             Plugin.Log.LogInfo($"Sound log: === MARK {markNr} ===");
             Ton(EFT.UI.EUISoundType.QuestSubTrackComplete);
         }
@@ -319,7 +319,7 @@ namespace Materialklang
                 e.WertRoute = pc._propagationScore;
                 if (e.Propagation) WandZwischenRaeumen.LogDaten(pc, e, colNameF);
                 if (e.Propagation) e.RaumwegText = Raumweg.LogText(occ, out _);   // 0.8.4: Portalkette (nur path=rooms)
-                if (e.Propagation && e.RaumwegText != null) { e.RichtungText = Richtung.LogText(source, occ); var zt = Zweitstimme.LogText(source); if (zt != null) e.RichtungText += zt; }   // 0.8.6; mehrweg: weitere Stimmen
+                if (e.Propagation && e.RaumwegText != null) { e.RichtungText = Richtung.LogText(source, occ); var zt = Zweitstimme.LogText(source); if (zt != null) e.RichtungText += zt; }   // 0.8.8; mehrweg: weitere Stimmen
             }
             e.Weg = ZeilenFormat.WegWahl(e.Propagation, e.Wirkung, e.WertT, e.WertD, e.WertR, e.WertRoute, e.WertWand);
             e.WegeText = e.Propagation ? Wege.RaumLogText(occ, pc) : Wege.LogText(occ);   // 0.8.4 Stufe 1
@@ -361,7 +361,7 @@ namespace Materialklang
             }
             else e.HoerKorr = 0f;
             {
-                var qp = Richtung.Echt(source);   // 0.8.6: echter Ort (nicht die Richtung ueber die Oeffnung)
+                var qp = Richtung.Echt(source);   // 0.8.8: echter Ort (nicht die Richtung ueber die Oeffnung)
                 e.QX = qp.x; e.QY = qp.y; e.QZ = qp.z;
                 var lt = occ.ListenerTransform;
                 e.Dy = lt != null ? qp.y - lt.position.y : float.NaN;
@@ -386,7 +386,7 @@ namespace Materialklang
                 if (lt != null && HallZonen.Finde(lt.position, out var hn, out var hrt, out var hdb))
                 { e.HallHoerer = hn; e.HallHoererRt = hrt; e.HallHoererDb = hdb; }
             }
-            Wegsuche.Klang(occ, source, e);   // 0.8.6 Abschnitt 19: Vergleichszeile [PathSearch] (vor dem Einreihen: e gehoert danach dem Schreiber)
+            Wegsuche.Klang(occ, source, e);   // 0.8.8 Abschnitt 19: Vergleichszeile [PathSearch] (vor dem Einreihen: e gehoert danach dem Schreiber)
             schreiber.Einreihen(e);
         }
 

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Materialklang.Schallweg
 {
     // ------------------------------------------------------------------------------------------
-    //  0.8.6 Wegsuche, Livetest-Fix (Factory 10.11.2026): Raumanteil (Diffusfeld) entlang eines gefundenen Wegs.
+    //  0.8.8 Wegsuche, Livetest-Fix (Factory 10.11.2026): Raumanteil (Diffusfeld) entlang eines gefundenen Wegs.
     //  Befund: Die Suche kannte nur Beugung um Kanten. In Hallen und Fluren mit harten Waenden traegt aber das Nachhallfeld den
     //  Schall in die Nachbarraeume (Sabine/Kuttruff: hinter einer Oeffnung S trifft die Leistung W S / A auf den naechsten Raum,
     //  dort herrscht 4 P / A). Die Suche war "um Ecken / ueber Raeume" im Median 14 dB (250 Hz) bis 38 dB (4 kHz) leiser als die

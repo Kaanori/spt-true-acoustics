@@ -1,6 +1,6 @@
 namespace Materialklang
 {
-    // 0.8.6 - ERZEUGT von Materialklang-KlangTest/werkzeuge/tabelle-cs.py aus clip-pegel.py (2026-11-10, EFT 0.16.9 / SPT 4.1.6).
+    // 0.8.8 - ERZEUGT von Materialklang-KlangTest/werkzeuge/tabelle-cs.py aus clip-pegel.py (2026-11-10, EFT 0.16.9 / SPT 4.1.6).
     // Nicht von Hand aendern - nach einem Spiel-Update neu messen (siehe KalibrierKern.TabelleLesen).
     // Je Zeile: Clipname TAB Samples TAB LAeq TAB LAFmax (dBFS(A), 125 ms, hoechstens 30 s, Pegel je Kanal, energetisch gemittelt).
     internal static class ClipPegelDaten

@@ -31,7 +31,7 @@ namespace Materialklang
         internal static ConfigEntry<bool> DiffusEreignis;  // tunneldiffus (17.11.): trocken nur der Teil des Raumanteils, der im Ereignis ankommt (ZeitKern)
         internal static ConfigEntry<bool> SpracheFrueh;    // tunneldiffus Teil 2 (17.11.): Sprache trocken nur mit dem fruehen, verstaendlichen Anteil (D50)
         internal static ConfigEntry<bool> RaumHallAn;   // hallsend (12.11.): Hindernis im selben Raum laesst den Hall stehen (DiffusKern.RaumHall)
-        internal static ConfigEntry<float> DiffusHallPegel;   // 10.11.: Abgleich des Hall-Anteils nach Gehoer   // diffus-hall (10.11.): Diffusanteil als Hall statt trocken (DiffusKern.cs)   // 0.8.6 Kennlinie (RaumwegKern.cs, Hoerbarkeit.Kennlinie)
+        internal static ConfigEntry<float> DiffusHallPegel;   // 10.11.: Abgleich des Hall-Anteils nach Gehoer   // diffus-hall (10.11.): Diffusanteil als Hall statt trocken (DiffusKern.cs)   // 0.8.8 Kennlinie (RaumwegKern.cs, Hoerbarkeit.Kennlinie)
         internal static readonly ConfigEntry<float>[] Dichte = new ConfigEntry<float>[Plugin.AnzahlGruppen];
         internal static readonly ConfigEntry<float>[] Massiv = new ConfigEntry<float>[Plugin.AnzahlGruppen];
 
@@ -70,11 +70,11 @@ namespace Materialklang
                 "Real building acoustics (mass law) for all sounds. Thick walls = near silence, like in real life. Off = game values / the per-material sliders in sections 2.xx.");
             Dynamik = c.Bind(s, "Max. insulation (dB)", 60f,
                 new ConfigDescription("Highest insulation of one path. In reality side paths (ceilings, pipes) limit it to about 55-65 dB.", new AcceptableValueRange<float>(20f, 90f)));
-            // 0.8.6 Kennlinie: Standard 0,2 -> 1. Die Stauchung lauter Klaenge macht jetzt die Kennlinie aus dem realen Pegel (Knie + Steigung
+            // 0.8.8 Kennlinie: Standard 0,2 -> 1. Die Stauchung lauter Klaenge macht jetzt die Kennlinie aus dem realen Pegel (Knie + Steigung
             // unten); der Faktor wirkt zusaetzlich auf alles (Steigung oberhalb des Grundgeraeuschs, siehe Hoerbarkeit.Rechnen) und bleibt
             // aus Kompatibilitaet bestehen. Vorhandene cfg-Werte (z. B. 0.42) bleiben, wie sie sind.
             Lautheit = c.Bind(s, "Loudness factor", 1f,
-                new ConfigDescription("Extra factor on the insulation you hear (dB x factor), for every sound. 1.0 = real physics (default since 0.8.6). Loud sounds no longer need it: gunshots, explosions and impacts are compressed by the 'Compression knee' / 'Compression above knee' settings from their real level. Below 1 it compresses on top of that (old behaviour, 0.2 was the old default). Only what you hear - bot hearing uses '3. Bot Hearing (SAIN) / Strength'. Applies live.", new AcceptableValueRange<float>(0.1f, 1f)));
+                new ConfigDescription("Extra factor on the insulation you hear (dB x factor), for every sound. 1.0 = real physics (default since 0.8.8). Loud sounds no longer need it: gunshots, explosions and impacts are compressed by the 'Compression knee' / 'Compression above knee' settings from their real level. Below 1 it compresses on top of that (old behaviour, 0.2 was the old default). Only what you hear - bot hearing uses '3. Bot Hearing (SAIN) / Strength'. Applies live.", new AcceptableValueRange<float>(0.1f, 1f)));
             KennKnie = c.Bind(s, "Compression knee (dB(A))", 85f,
                 new ConfigDescription("Real level at your ear (dB(A), without walls) above which a sound is compressed like the game mix does it: a real gunshot is ~140 dB(A), headphones play it far quieter. Below the knee every dB of insulation counts fully (footsteps, voices, cars: real physics); above it, the part of the insulation that lies in the loud range counts only with 'Compression above knee'. So a closed door (23 dB) takes ~9 dB off a rifle shot 80 m away instead of 23 dB, while 60 dB of concrete still takes ~46 dB. Soft knee 10 dB wide (no audible step). 85 = the game plays levels up to ~80 dB(A) about 1:1. Applies live.", new AcceptableValueRange<float>(60f, 130f)));
             KennSteigung = c.Bind(s, "Compression above knee", 0.2f,
@@ -82,7 +82,7 @@ namespace Materialklang
             // explosionfern (17.11.): Standard an - aendert nur Explosionen hinter Hindernissen (Schuesse, Einschlaege, Schritte unveraendert),
             // offene Tuer +0,02 dB, 3-4 Raeume (23 dB) 2,6-3,2 dB leiser; Herleitung und Zahlen KennGruppeKern.cs
             KennKurveAn = c.Bind(s, "Explosions: compression from the game distance curve", true,
-                "Explosions behind walls and rooms are compressed as much as the game itself compresses explosions over distance (its volume curve for grenades), instead of the gunshot slope 'Compression above knee'. A grenade 43 m away behind 3-4 rooms (23 dB real) then plays 7.2 dB quieter instead of 4.6 dB - as quiet as the game plays the same grenade ~600 m away in the open. Gunshots, impacts and quiet sounds are not changed. Off = gunshot slope for explosions too (before 0.8.6). Applies live.");
+                "Explosions behind walls and rooms are compressed as much as the game itself compresses explosions over distance (its volume curve for grenades), instead of the gunshot slope 'Compression above knee'. A grenade 43 m away behind 3-4 rooms (23 dB real) then plays 7.2 dB quieter instead of 4.6 dB - as quiet as the game plays the same grenade ~600 m away in the open. Gunshots, impacts and quiet sounds are not changed. Off = gunshot slope for explosions too (before 0.8.8). Applies live.");
             // farbekennlinie (12.11.): Neigung des Tiefpasses mit demselben Stauchungsfaktor wie die Lautstaerke (FarbeKennlinieKern.cs)
             FarbeKennlinieAn = c.Bind(s, "Timbre follows loudness curve", true,
                 "Loud sounds (gunshots, explosions, impacts) that the compression above keeps loud behind an obstacle also lose only as much treble as their loudness drop says: the muffling is compressed by the same factor as the volume (a shot that loses 16 dB of real insulation but only 4 dB of volume gets a quarter of the muffling). Off = muffling from the full real insulation (loud but very dull). Quiet sounds below the knee (footsteps, voices, suppressed shots far away) are not affected. Applies live.");
@@ -99,7 +99,7 @@ namespace Materialklang
             Koinzidenz = c.Bind(s, "Coincidence correction", true,
                 "Walls and plates (concrete/stone, metal, wood, glass, door leaves) insulate less than the plain mass law around and above their coincidence frequency (Sharp / Cremer, see README); thin plywood and glass already from about 1-2 kHz. Off = pure mass law.");
             VerlustFaktor = c.Bind(s, "Coincidence loss factor", 0.1f,
-                new ConfigDescription("Effective total loss factor of the coincidence correction for metal, wood and glass (internal damping + edges + radiation). Higher = shallower dip. Concrete/stone no longer uses it since 0.8.6: there the loss factor of EN ISO 12354-1 annex C applies (0.01 + m''/(485 sqrt f)).", new AcceptableValueRange<float>(0.02f, 0.5f)));
+                new ConfigDescription("Effective total loss factor of the coincidence correction for metal, wood and glass (internal damping + edges + radiation). Higher = shallower dip. Concrete/stone no longer uses it since 0.8.8: there the loss factor of EN ISO 12354-1 annex C applies (0.01 + m''/(485 sqrt f)).", new AcceptableValueRange<float>(0.02f, 0.5f)));
             string[] namen = { "Concrete/Stone", "Soil/Terrain", "Gravel/Pebbles", "Metal thick", "Metal thin", "Wood thick", "Wood thin",
                                "Glass", "Soft", "Grate/Fence/Grass", "Body", "Water", "Unknown", "Door leaf", "Snow" };
             for (int i = 0; i < Plugin.AnzahlGruppen; i++)
@@ -120,24 +120,24 @@ namespace Materialklang
                 new ConfigDescription("Level of the reverb part of 'Diffuse sound as reverb' (the diffuse sound of rooms that is sent to the game's reverb). 0 = as calculated; lower = less reverb from sounds in other rooms/halls (the dry, located part is not changed). How loud the game's reverb really plays per dB cannot be measured from outside, so this is tuned by ear. Applies live.",
                     new AcceptableValueRange<float>(-30f, 6f)));
             DiffusAlsHall = c.Bind(s, "Diffuse sound as reverb", true,
-                "On (default since 0.8.6): sound that reaches you through rooms, openings or walls is split. The directed part (straight or around edges through the openings, radiated by the wall) is the dry, located sound; the diffuse part (reverb of the source room leaking into your room) is sent to the game's reverb instead (Meta reverb send of that sound, up to +20 dB), so the reverb you hear stays as loud as before but the dry sound gets quieter: a shot in the next hall sounds distant and reverberant instead of close and clear. Bot hearing is unchanged (bots hear the total energy). Off = the whole energy plays as the dry sound (behaviour up to 0.8.56). Applies live.");
+                "On (default since 0.8.8): sound that reaches you through rooms, openings or walls is split. The directed part (straight or around edges through the openings, radiated by the wall) is the dry, located sound; the diffuse part (reverb of the source room leaking into your room) is sent to the game's reverb instead (Meta reverb send of that sound, up to +20 dB), so the reverb you hear stays as loud as before but the dry sound gets quieter: a shot in the next hall sounds distant and reverberant instead of close and clear. Bot hearing is unchanged (bots hear the total energy). Off = the whole energy plays as the dry sound (behaviour up to 0.8.7). Applies live.");
             RaumHallAn = c.Bind(s, "Obstacle in the same room keeps the reverb", true,
-                "On (default since 0.8.6): when a source and you are in the same measured room and an obstacle (pillar, machine, container, inner wall piece) blocks the direct line, " +
+                "On (default since 0.8.8): when a source and you are in the same measured room and an obstacle (pillar, machine, container, inner wall piece) blocks the direct line, " +
                 "only the direct sound gets quieter - the reverb of the room is fed by the whole sound, as in reality, so it keeps the level it has without the obstacle " +
                 "(the reverb send of that sound is raised by the obstacle's insulation, up to the game's +20 dB limit; the rest is counted in the diagnostic line). " +
-                "Needs 'Diffuse sound as reverb'. Outside (no measured room) and between different rooms nothing changes. Off = the obstacle also lowers the reverb (behaviour up to 0.8.5). Applies live.");
+                "Needs 'Diffuse sound as reverb'. Outside (no measured room) and between different rooms nothing changes. Off = the obstacle also lowers the reverb (behaviour up to 0.8.7). Applies live.");
             // diffushoerbar (17.11.): Messung 17.11. - Metas Hall liegt 30-50 dB unter dem Direktschall, der Diffusanteil im Send war verloren
             DiffusHoerbar = c.Bind(s, "Diffuse sound stays audible", true,
-                "On (default since 0.8.6): the diffuse part of a sound from another room (the reverb of the source room leaking through doors, openings and walls) " +
+                "On (default since 0.8.8): the diffuse part of a sound from another room (the reverb of the source room leaking through doors, openings and walls) " +
                 "is played with the dry sound again, because the game's reverb plays it 30-50 dB too quietly (measured on Factory). " +
                 "The reverb you hear stays exactly as loud as before; only the part the reverb really makes audible ('Meta reverb strength') is taken off the dry sound. " +
                 "Enemies in the next room, behind a wall or in the cellar get louder by the 'applied dry' value of the sound log (typically 5-24 dB). " +
-                "Needs 'Diffuse sound as reverb'. Off = only the directed part plays dry, the diffuse part goes to the reverb (behaviour up to 0.8.5). Applies live.");
+                "Needs 'Diffuse sound as reverb'. Off = only the directed part plays dry, the diffuse part goes to the reverb (behaviour up to 0.8.7). Applies live.");
             // diffusflattern (17.11.): Quelle, die gerade nichts spielt, bekommt kein neues Ziel (QuellRuheKern.cs)
             RuheHalten = c.Bind(s, "Idle sources keep their level", true,
-                "On (default since 0.8.6): a sound source that is not playing right now (between two footsteps of the same bot) keeps the level of its last sound " +
+                "On (default since 0.8.8): a sound source that is not playing right now (between two footsteps of the same bot) keeps the level of its last sound " +
                 "instead of getting a new one computed without a sound (unknown length and clip level, up to 37 dB louder). The game slides the volume of the next " +
-                "sound from that value, so the start of each footstep no longer flares up. Off = level computed every time (behaviour up to 0.8.5). Applies live.");
+                "sound from that value, so the start of each footstep no longer flares up. Off = level computed every time (behaviour up to 0.8.7). Applies live.");
             MetaHallDb = c.Bind(s, "Meta reverb strength (dB)", (float)DiffusHoerbarKern.EtaStandardDb,
                 new ConfigDescription("How loud the game's (Meta) reverb of a sound arrives at your ear compared with its direct sound, at reverb send 0 dB (energy). " +
                     "Measured on Factory: -43 dB far from the source hall, -32 dB near it (4 kHz). Used by 'Diffuse sound stays audible' to take the part the reverb " +
@@ -145,14 +145,14 @@ namespace Materialklang
                     new AcceptableValueRange<float>(-80f, 10f)));
             // tunneldiffus (17.11.): Meldung Tunnel Factory - Raumanteil aus Hallen als kompaktes Ereignis 5-10 dB zu laut (ZeitKern)
             DiffusEreignis = c.Bind(s, "Diffuse sound: only what arrives with the event", true,
-                "On (default since 0.8.6): of the room part of a sound from another room (the reverb of the source hall leaking through openings), " +
+                "On (default since 0.8.8): of the room part of a sound from another room (the reverb of the source hall leaking through openings), " +
                 "only the share that reaches you within the ear's short-term window (LAFmax, 125 ms) is played with the dry sound. A hall with a long reverb " +
                 "spreads a footstep's energy over seconds; played as one compact step it was 5-10 dB too loud (Factory tunnels). Long sounds (speech, loops) " +
                 "keep almost all of it; the duration comes from the clip's measured level table. The reverb input is unchanged. Needs 'Diffuse sound stays audible'. " +
                 "Sound log: '| event -X dB (late Y %, signal Z s)'. Off = the whole steady-state energy plays dry. Applies live.");
             // tunneldiffus Teil 2 (17.11.): Meldung "jedes Wort" - spaeter Nachhall einer Halle ist fuer Sprache Stoerschall, nicht Sprache
             SpracheFrueh = c.Bind(s, "Speech from other rooms: only the intelligible early part", true,
-                "On (default since 0.8.6): a voice from another room or hall plays dry only with the part of its energy that arrives within " +
+                "On (default since 0.8.8): a voice from another room or hall plays dry only with the part of its energy that arrives within " +
                 "50 ms after the first sound from the opening (definition D50, ISO 3382-1) - that part is heard as clear speech. The later reverberant " +
                 "part of a big hall smears the syllables; in reality you hear it as a loud but unintelligible murmur. That part belongs to the reverb " +
                 "(its input stays at the full level), but the game's reverb plays it 30-50 dB too quietly, so voices from halls become much quieter. " +
@@ -199,7 +199,7 @@ namespace Materialklang
             return deckel ? Mathf.Clamp((float)r, 0f, Dynamik.Value) : Mathf.Max((float)r, 0f);
         }
 
-        /// <summary>0.8.6: Daemmung eines getroffenen Stuecks: gehoert der Collider zu einer Tuer (Gruppe "Door leaf"), zaehlt ihr Blatt
+        /// <summary>0.8.8: Daemmung eines getroffenen Stuecks: gehoert der Collider zu einer Tuer (Gruppe "Door leaf"), zaehlt ihr Blatt
         /// (Material + gemessene Blattdicke, TuerKern.cs) statt Gruppe x Strahllaenge - dieselbe Rechnung wie das Portal.</summary>
         internal static float DaemmungStueck(int id, int g, float dicke, float frequenz, bool deckel)
         {
@@ -209,7 +209,7 @@ namespace Materialklang
 
         internal static float DaemmungStueck(int id, int g, float dicke) => DaemmungStueck(id, g, dicke, Frequenz.Value, true);
 
-        /// <summary>0.8.6: Flaechenmasse eines getroffenen Stuecks (Tuer: ihr Blatt).</summary>
+        /// <summary>0.8.8: Flaechenmasse eines getroffenen Stuecks (Tuer: ihr Blatt).</summary>
         internal static float MasseStueck(int id, int g, float dicke)
         {
             if (g == (int)Gruppe.Door && TuerenFenster.StueckMasse(id, out float m)) return m;
@@ -322,7 +322,7 @@ namespace Materialklang
         /// zaehlen = Diagnosezaehler fuehren (nur beim Anwenden, nicht beim Pruefen).</summary>
         static float SollDb(SpatialAudioOccluder occ, BetterSource source, float w, bool zaehlen)
         {
-            // 0.8.6 Kennlinie: Daemmung im echten Pegelraum, gestaucht nur, soweit die Quelle real ueber dem Knie liegt
+            // 0.8.8 Kennlinie: Daemmung im echten Pegelraum, gestaucht nur, soweit die Quelle real ueber dem Knie liegt
             // (Hoerbarkeit.Gestaucht: Lautheit x [K(L_frei) - K(L_frei - D)]; Pegel unbekannt: D x Lautheit wie bisher).
             var lt0 = occ.ListenerTransform;
             int typ0 = source != null && source.Preset != null ? (int)source.Preset.Type : -1;
@@ -654,7 +654,7 @@ namespace Materialklang
         internal static int TrockenFarbe; internal static double TrockenFarbeSumme;
 
         /// <summary>Daempfung des trockenen Signals (dB). dbGesamt = Soll der Summe (SollDb). anwenden = Send setzen und zaehlen (sonst nur
-        /// rechnen: Pruefung des gemerkten Wegs). Ohne Schalter, ohne Diffusanteil oder ohne Hallweg: dbGesamt (wie bis 0.8.6).</summary>
+        /// rechnen: Pruefung des gemerkten Wegs). Ohne Schalter, ohne Diffusanteil oder ohne Hallweg: dbGesamt (wie bis 0.8.8).</summary>
         static float Trocken(SpatialAudioOccluder occ, BetterSource q, float w, float dbGesamt, bool anwenden)
         {
             try

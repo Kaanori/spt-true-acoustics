@@ -46,10 +46,10 @@ namespace Materialklang
             public bool Nachholen;             // Rechnung steht aus -> Occluder neu rechnen lassen
             public uint PaarGerechnet;         // Raumpaar der geltenden Wertung
             public double FitM1 = double.NaN, FitM2 = double.NaN; public float FitK, FitTp, FitLp;
-            // 0.8.6: Container der Rechnung (Richtung: gehoert der Wert noch zu dieser Quelle?) und Ersatzweg ohne Spielroute
+            // 0.8.8: Container der Rechnung (Richtung: gehoert der Wert noch zu dieser Quelle?) und Ersatzweg ohne Spielroute
             public AudioSourceContainer Behaelter;
             public bool Ersatz;
-            public double Buendel = 1;         // 0.8.6: Buendelung der Austrittsrichtungen (RoutenMischer.Summe mit Hoerer)
+            public double Buendel = 1;         // 0.8.8: Buendelung der Austrittsrichtungen (RoutenMischer.Summe mit Hoerer)
             // 10.11. (B2): Ueberblendung als Gleiten der Band-Daemmung in dB (StetigkeitKern.cs), jedes Bild fortgeschrieben (BildTakt)
             public readonly RoutenGleiter Gleit = new RoutenGleiter();
             public ParallelSoundPropagationCalculator Pc;   // Rechner, solange der Zustand im Bild-Takt steht
@@ -120,9 +120,9 @@ namespace Materialklang
         internal static void Binden(ConfigFile c)
         {
             const string s = "0. Physics Mode (real values)";
-            Richtung.Binden(c);   // 0.8.6
+            Richtung.Binden(c);   // 0.8.8
             Reichweite.Binden(c);   // raid2242richtung
-            Ersatzweg.Binden(c);  // 0.8.6
+            Ersatzweg.Binden(c);  // 0.8.8
             Aktiv = c.Bind(s, "Room paths: physical openings", true,
                 "Sound between rooms (via doors/windows): computed from the path geometry and the portal state instead of the game's route cost. " +
                 "Open openings: edge diffraction (Kurze-Anderson) and the sound field of the rooms in between; closed doors/windows keep the values of section 4. " +
@@ -166,7 +166,7 @@ namespace Materialklang
                     finalizer: new HarmonyMethod(typeof(Raumweg), nameof(ApplyEnde)));
                 // 0.8.5: Pool-Reset vergisst die Routen; laufende Ueberblendung haelt Continuous-Occluder in Bewegung
                 hauptThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
-                Richtung.Anwenden(h);   // 0.8.6
+                Richtung.Anwenden(h);   // 0.8.8
                 Reichweite.Anwenden(h);   // raid2242richtung
                 // 10.11. (B2): Gleiter jedes Bild fortschreiben - am Anfang des Audio-Bilds, vor jeder Rechnung/Anwendung des Spiels
                 var sysUpd = AccessTools.DeclaredMethod(typeof(SpatialAudioSystem), "Update");
@@ -313,7 +313,7 @@ namespace Materialklang
         static void UpdateNach(ParallelSoundPropagationCalculator __instance, AudioSourceContainer sourceContainer, Vector3 listenerPosition)
         {
             if (!An || sourceContainer == null) return;
-            // 0.8.6: Fruehabbruch ohne Spielroute (Wertung 1 = stumm) -> Ersatzweg ueber die Hindernisse
+            // 0.8.8: Fruehabbruch ohne Spielroute (Wertung 1 = stumm) -> Ersatzweg ueber die Hindernisse
             if (__instance._earlyOutThisFrame) { Ersatzweg.Pruefen(__instance, sourceContainer, listenerPosition); return; }
             try
             {
@@ -361,7 +361,7 @@ namespace Materialklang
                 double jetzt = Time.realtimeSinceStartup;
                 if (__instance._earlyOutThisFrame)
                 {
-                    // 0.8.6: Ersatzweg (kein Job, Wert aus UpdateNach) - nur weiter ueberblenden
+                    // 0.8.8: Ersatzweg (kein Job, Wert aus UpdateNach) - nur weiter ueberblenden
                     if (z.Ersatz) { if (z.Wertung >= 0f && z.Gleit.Laeuft && __instance._propagationScore == z.Wertung) Schreiben(__instance, z, jetzt, false); return; }
                     if (z.Wertung >= 0f || z.Mix.Hat) z.Vergessen();
                     return;
@@ -395,7 +395,7 @@ namespace Materialklang
                     // 10.11. (spitzen, N2): ein Ergebnis der Wegsuche mit nicht endlichem Wert wird verworfen - dann gilt die Rechnung der Mod
                     bool weg = WegsucheMischen(z, jetzt);
                     if (weg && !MischerEndlich(z)) { weg = false; dNaN++; }
-                    bool ok = weg || Rechnen(__instance, z, spiel, jetzt);   // 0.8.6 Abschnitt 19 "Use": Wege der Wegsuche statt der Spielrouten
+                    bool ok = weg || Rechnen(__instance, z, spiel, jetzt);   // 0.8.8 Abschnitt 19 "Use": Wege der Wegsuche statt der Spielrouten
                     ZeitRechnen.Dazu(tr, bild);
                     z.LetzteMs = Laufzeit.Ms(Laufzeit.Jetzt - tr);
                     if (z.Nachholen) dNachgeholt++;
@@ -431,7 +431,7 @@ namespace Materialklang
             double tg = GleitJetzt, tau = GleitTau;
             if (neu)
             {
-                // 0.8.6: Austritt als mittlere Richtung vom Hoerer (nicht Mittel der Punkte), dazu die Buendelung
+                // 0.8.8: Austritt als mittlere Richtung vom Hoerer (nicht Mittel der Punkte), dazu die Buendelung
                 // 10.11. (klangfarbe, Log 18:00:34.603): Summe ueber die ECHTEN Banddaemmungen der Routen (nicht je Route und Band bei
                 // Max. insulation gekappt), danach der Deckel nur fuer die Lautstaerke (WegeKern.Deckeln): das Bezugsband hoechstens
                 // dyn, die Hochbaender behalten ihren Abstand. Der Gleiter laeuft so im gespielten Mass (eine Daemmung ueber dem Deckel
@@ -845,11 +845,11 @@ namespace Materialklang
         }
         static Exception ApplyEnde(Exception __exception)
         {
-            if (__exception == null && applyOcc != null && applySrc != null) Richtung.Melden(applyOcc, applySrc);   // 0.8.6
+            if (__exception == null && applyOcc != null && applySrc != null) Richtung.Melden(applyOcc, applySrc);   // 0.8.8
             applyOcc = null; applySrc = null; return __exception;
         }
 
-        /// <summary>0.8.6 Richtung: energiegewichteter Austrittspunkt und Daemmung (dB) des Raumwegs eines Rechners, solange sein
+        /// <summary>0.8.8 Richtung: energiegewichteter Austrittspunkt und Daemmung (dB) des Raumwegs eines Rechners, solange sein
         /// Wert gilt und zu diesem Container gehoert. ersatz = Ersatzweg ohne Spielroute.</summary>
         internal static bool RichtungsDaten(ParallelSoundPropagationCalculator pc, AudioSourceContainer c, out V3 austritt, out float routeDb, out bool ersatz)
             => RichtungsDaten(pc, c, out austritt, out routeDb, out ersatz, out _);
@@ -1106,7 +1106,7 @@ namespace Materialklang
 
         internal static void Loggen()
         {
-            Richtung.Loggen(); Zweitstimme.Loggen(); Ersatzweg.Loggen(); FreiLoggen();   // 0.8.6; mehrweg: Stimmenvorrat
+            Richtung.Loggen(); Zweitstimme.Loggen(); Ersatzweg.Loggen(); FreiLoggen();   // 0.8.8; mehrweg: Stimmenvorrat
             // 0.8.5 Leistung: Zeit auf dem Hauptfaden je Teil (Summe in 30 s, groesster Wert in einem Bild)
             if (!ZeitGesamt.Leer || !ZeitWege.Leer || !ZeitLaut.Leer)
             {
@@ -1166,7 +1166,7 @@ namespace Materialklang
         {
             public SpatialAudioRoom[] Raeume = new SpatialAudioRoom[0];
             public readonly Dictionary<SpatialAudioRoom, int> Index = new Dictionary<SpatialAudioRoom, int>(Gleich.Ref);
-            // 0.8.6 Ersatzweg: Geometrie je Portal aus dem Objekt (wie SpatialAudioDataContainer.CreatePortalData), ohne Job
+            // 0.8.8 Ersatzweg: Geometrie je Portal aus dem Objekt (wie SpatialAudioDataContainer.CreatePortalData), ohne Job
             public RaumPortal[] SGeo = new RaumPortal[0];
             public bool[] SGeoHat = new bool[0];
             public float[] WandP = new float[0];       // wie WandFaktor(AudioPortalData)
@@ -1256,7 +1256,7 @@ namespace Materialklang
             return RoutenRechnen(routes, s._routesPortalIndicesData, s._staticPortalDataList, anzahl, z, spiel, jetzt, BlendS);
         }
 
-        /// <summary>0.8.6: Routenrechnung auf den Routendaten eines Raumpaars (Job des Rechners oder - fuer Quellen ohne Okklusion -
+        /// <summary>0.8.8: Routenrechnung auf den Routendaten eines Raumpaars (Job des Rechners oder - fuer Quellen ohne Okklusion -
         /// direkt aus SpatialAudioDataContainer, WandDaempfung). z.A/B/RaumA/RaumB/Umgekehrt/Paar muessen gesetzt sein.</summary>
         static bool RoutenRechnen(NativeArray<AudioRouteData> routes, NativeArray<int> indizes, NativeList<RoomPair.AudioPortalData> liste, int anzahl,
             Zustand z, float spiel, double jetzt, double blendS, RaumwegNetz.IAussenSchirm schirm = null)
@@ -1310,8 +1310,8 @@ namespace Materialklang
                 RaumAId = z.RaumA != null ? z.RaumA.ID : (short)-1, RaumADraussen = z.RaumA != null && z.RaumA.IsOutdoor,
                 Dyn = Physik.Dynamik.Value, Alpha = Alpha.Value, TiefpassMin = Physik.TiefpassMin.Value,
                 FRef = Physik.Frequenz.Value, FHoch = FHoch, Fit1 = (float)Wege.F[1], Fit2 = (float)Wege.F[2], RoutenGesamt = len,
-                RangN = RangNJetzt, Breite = BreiteJetzt,   // 0.8.6: Kappen der Routen ohne Gewicht (RaumwegNetz.Rechne)
-                Schirm = schirm,                            // 0.8.6: Strecken im Freien abschirmen (Quellen ohne Spiel-Okklusion)
+                RangN = RangNJetzt, Breite = BreiteJetzt,   // 0.8.8: Kappen der Routen ohne Gewicht (RaumwegNetz.Rechne)
+                Schirm = schirm,                            // 0.8.8: Strecken im Freien abschirmen (Quellen ohne Spiel-Okklusion)
             };
             bool log = KlangLog.An;
             long rt1 = Laufzeit.Jetzt;
@@ -1406,7 +1406,7 @@ namespace Materialklang
             }
         }
 
-        /// <summary>0.8.6: Blatt-Daemmung je Band (Massengesetz, TuerenFenster/TuerKern) ins Netz; NaN = kein Blattmodell.
+        /// <summary>0.8.8: Blatt-Daemmung je Band (Massengesetz, TuerenFenster/TuerKern) ins Netz; NaN = kein Blattmodell.
         /// TuerenFenster haelt das Ergebnis je Portal, hier nur ein Woerterbuchzugriff je Portal und Bild.</summary>
         static void BlattLaden(int pi, BaseSpatialAudioPortal p)
         {
@@ -1497,7 +1497,7 @@ namespace Materialklang
 
         static V3 V(Vector3 v) => new V3(v.x, v.y, v.z);
 
-        /// <summary>0.8.6 Ersatzweg: Portalgeometrie aus den Objekten (einmal je Raid, nach dem Raumnetz).</summary>
+        /// <summary>0.8.8 Ersatzweg: Portalgeometrie aus den Objekten (einmal je Raid, nach dem Raumnetz).</summary>
         static void ErsatzGeometrie(int max)
         {
             Array.Resize(ref Netz.SGeo, max); Array.Resize(ref Netz.SGeoHat, max); Array.Resize(ref Netz.WandP, max);
@@ -1544,7 +1544,7 @@ namespace Materialklang
         {
             var inv = CultureInfo.InvariantCulture;
             var sb = new StringBuilder(160);
-            if (float.IsNaN(spiel)) sb.Append(" | room path (no game occlusion for this source - own calculation over the game's routes): loudest route ");   // 0.8.6
+            if (float.IsNaN(spiel)) sb.Append(" | room path (no game occlusion for this source - own calculation over the game's routes): loudest route ");   // 0.8.8
             else sb.Append(" | room path: game cost ").Append(spiel.ToString("F2", inv)).Append(" (=").Append((spiel * dyn).ToString("F1", inv))
               .Append(" dB) -> loudest route ");
             sb.Append(e.Db.ToString("F1", inv)).Append(" dB [open ").Append(e.DbGeo.ToString("F1", inv))
@@ -1575,7 +1575,7 @@ namespace Materialklang
                 sb.Append("open ").Append(Netz.BestOffen[i].ToString("F2", inv));
                 if (Netz.BestOffen[i] < 0.999)
                 {
-                    // 0.8.6: Blatt mit Material, Dicke (gemessen/Ersatz) und dB je Band; ohne Blattmodell wie bisher der Bezugswert
+                    // 0.8.8: Blatt mit Material, Dicke (gemessen/Ersatz) und dB je Band; ohne Blattmodell wie bisher der Bezugswert
                     string bt = p != null ? TuerenFenster.BlattText(p) : null;
                     if (bt != null) sb.Append(' ').Append(bt);
                     else sb.Append(" door ").Append(Netz.BestTauDb[i].ToString("F0", inv)).Append(" dB");

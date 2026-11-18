@@ -72,7 +72,7 @@ namespace Materialklang
         public bool Frei;               // das Spiel hat "frei" gemeldet
         public bool HatT, HatD, HatR;   // Weg traegt bei (D/R auch gehalten)
         public bool DGehalten, RGehalten, DDirekt, RDirekt, RHysterese;
-        public bool UmwegUnbekannt;     // 0.8.6: diese Rechnung fand keinen Umweg (kein freier Strahl, keine Kante, keine Reflexion) - Log
+        public bool UmwegUnbekannt;     // 0.8.8: diese Rechnung fand keinen Umweg (kein freier Strahl, keine Kante, keine Reflexion) - Log
         // umwegsuche (13.11.): Ergebnis der eigenen Wegsuche statt der Rueckfallgrenze (nur bei UmwegUnbekannt, UmwegKern/Auswerten)
         public bool HatS;               // angewendet in dieser Rechnung
         public readonly double[] S = new double[WegeKern.N];         // Energiesumme der Kantenwege der Suche je Band (dB, <= 0)
@@ -157,7 +157,7 @@ namespace Materialklang
         }
 
         /// <summary>
-        /// 0.8.6 (Meldung Streets 09.11.2026 "Schuesse mal lauter, mal leiser"): Grenze der Abschirmung im Hindernis-Zweig.
+        /// 0.8.8 (Meldung Streets 09.11.2026 "Schuesse mal lauter, mal leiser"): Grenze der Abschirmung im Hindernis-Zweig.
         /// Den Hindernis-Zweig nimmt das Spiel nur, wenn Quelle und Hoerer im selben Raum der Raumdaten liegen (draussen: beide in
         /// CommonOutdoor) - dann gibt es immer einen Weg ueber und um die Hindernisse. Das Spiel sucht aber nur EINE Kante nahe dem
         /// ersten Treffer der Sichtlinie (EdgeDiffractionCalculator) und misst Durchgang nur durch EIN Objekt; zwischen Haeusern auf
@@ -409,7 +409,7 @@ namespace Materialklang
             z.DDirekt = z.HatD && z.DSp.Direkt;
             z.HatR = Weg(z.RSp, z.R, ranR, rDirekt, rHat, r, q, h, maxDb, haltNah, haltFern, abklingDb, hystDb, out z.RGehalten, out z.RHysterese);
             z.RDirekt = z.HatR && z.RSp.Direkt;
-            // 0.8.6 UmwegUnbekannt (Log/Diagnose): diese Rechnung hat keinen Umweg gefunden (kein freier Strahl, keine Kante, keine Reflexion).
+            // 0.8.8 UmwegUnbekannt (Log/Diagnose): diese Rechnung hat keinen Umweg gefunden (kein freier Strahl, keine Kante, keine Reflexion).
             z.UmwegUnbekannt = UmwegUnbekanntAus(z.TFrei, ranD, dDirekt, dHat, ranR, rDirekt, rHat);
             // umwegsuche: NUR in diesem Fall ersetzt das Ergebnis der Wegsuche die Rueckfallgrenze (Schranken: unten die Grenze, oben 0 dB)
             if (suche != null && z.UmwegUnbekannt)
@@ -438,7 +438,7 @@ namespace Materialklang
                 double[] src = z.Bester == 1 ? z.T : z.Bester == 2 ? z.D : z.Bester == 3 ? z.R : z.Bester == 4 ? z.S : null;
                 for (int b = 0; b < N; b++) z.Ergebnis[b] = src != null ? Math.Max(-maxDb, Math.Min(0, src[b])) : -maxDb;
             }
-            // 0.8.6: Schirmgrenze (SchirmMaxDb): im Hindernis-Zweig gibt es immer einen Weg um die Hindernisse - hoechstens 25 dB.
+            // 0.8.8: Schirmgrenze (SchirmMaxDb): im Hindernis-Zweig gibt es immer einen Weg um die Hindernisse - hoechstens 25 dB.
             // schirmgrenze: je Band (SchirmDb), nicht mehr flach
             var ff = f ?? StandardF;
             for (int b = 0; b < N; b++) z.Ergebnis[b] = Math.Max(z.Ergebnis[b], -SchirmDb(ff[b], ff[N - 1], maxDb));
@@ -475,7 +475,7 @@ namespace Materialklang
             return true;
         }
 
-        /// <summary>0.8.6/umwegsuche: hat diese Rechnung des Spiels keinen Umweg gefunden (kein freier T-Strahl, keine Kante, keine Reflexion,
+        /// <summary>0.8.8/umwegsuche: hat diese Rechnung des Spiels keinen Umweg gefunden (kein freier T-Strahl, keine Kante, keine Reflexion,
         /// auch keine freie Sichtlinie in D/R)? Genau dann greift die Rueckfallgrenze - und nur dann fragt der Hindernis-Zweig die Wegsuche.
         /// tFrei = Anteil freier T-Strahlen (0, wenn T nicht lief).</summary>
         public static bool UmwegUnbekanntAus(double tFrei, bool ranD, bool dDirekt, bool dHat, bool ranR, bool rDirekt, bool rHat)
@@ -519,7 +519,7 @@ namespace Materialklang
                 double e = g + wR[b];
                 if (z.HatT) e += Energie(z.TWand[b]);
                 if (z.HatR && z.RDirekt && !z.HatT) e = Math.Max(e, 1.0);
-                e = Math.Max(e, Energie(-SchirmDb(ff[b], ff[N - 1], maxDb)));   // 0.8.6 Schirmgrenze wie Auswerten (schirmgrenze: je Band)
+                e = Math.Max(e, Energie(-SchirmDb(ff[b], ff[N - 1], maxDb)));   // 0.8.8 Schirmgrenze wie Auswerten (schirmgrenze: je Band)
                 z.Jetzt[b] = Math.Min(0.0, DbAus(e, -maxDb));
             }
             z.WertungJetzt = Math.Max(0, Math.Min(1, -z.Jetzt[0] / maxDb));
